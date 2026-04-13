@@ -1,2 +1,15 @@
 ---
 # docker role 默认变量
+docker_data_root: "/ROOT/data/docker-data/docker-registry"
+docker_registry_mirrors:
+  - "https://docker.mirrors.ustc.edu.cn"
+  - "https://hub-mirror.c.163.com"
+
+# 基础优化配置
+docker_storage_driver: "overlay2"
+docker_log_driver: "json-file"
+docker_log_max_size: "100m"
+docker_log_max_file: "3"
+docker_live_restore: true
+docker_max_concurrent_downloads: 10
+docker_max_concurrent_uploads: 5

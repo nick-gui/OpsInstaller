@@ -1,10 +1,13 @@
 {
   "data-root": "{{ docker_data_root }}",
-  "log-driver": "json-file",
+  "storage-driver": "{{ docker_storage_driver }}",
+  "live-restore": {{ docker_live_restore | lower }},
+  "max-concurrent-downloads": {{ docker_max_concurrent_downloads }},
+  "max-concurrent-uploads": {{ docker_max_concurrent_uploads }},
+  "log-driver": "{{ docker_log_driver }}",
   "log-opts": {
-    "max-size": "100m",
-    "max-file": "3"
+    "max-size": "{{ docker_log_max_size }}",
+    "max-file": "{{ docker_log_max_file }}"
   },
-  "registry-mirrors": {{ docker_registry_mirrors | to_nice_json }},
-  "storage-driver": "overlay2"
+  "registry-mirrors": {{ docker_registry_mirrors | to_nice_json }}
 }
