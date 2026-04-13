@@ -1,6 +1,6 @@
 ---
 - name: 安装 Supervisor
-  hosts: all
+  hosts: "{{ webserver }}"
   become: yes
   gather_facts: yes
 

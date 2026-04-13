@@ -1,2 +1,30 @@
 ---
 # common role 默认变量
+
+# 系统配置
+system_timezone: "Asia/Shanghai"
+system_locale: "en_US.UTF-8"
+
+# 用户配置
+system_users: []
+
+# 目录结构
+base_directories: []
+
+# 磁盘挂载配置
+disk_mounts: []
+
+# SSH 密钥同步配置
+ssh_keys_config: []
+
+# 系统参数优化
+sysctl_config: []
+
+# 软件版本
+docker_version: "26.0.0"
+git_version: ""
+supervisor_version: ""
+
+# Docker 配置
+docker_data_root: "/data/docker"
+docker_registry_mirrors: []

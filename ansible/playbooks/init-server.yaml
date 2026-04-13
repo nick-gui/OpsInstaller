@@ -1,6 +1,6 @@
 ---
 - name: 服务器初始化
-  hosts: all
+  hosts: "{{ webserver }}"
   become: yes
   gather_facts: yes
 

@@ -1,2 +1,4 @@
 ---
 # directory role 默认变量
+
+base_directories: []

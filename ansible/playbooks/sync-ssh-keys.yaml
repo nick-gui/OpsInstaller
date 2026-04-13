@@ -1,6 +1,6 @@
 ---
 - name: 同步 SSH 密钥
-  hosts: all
+  hosts: "{{ webserver }}"
   become: yes
   gather_facts: yes
 

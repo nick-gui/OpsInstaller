@@ -1,2 +1,4 @@
 ---
 # sysctl role 默认变量
+
+sysctl_config: []

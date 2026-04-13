@@ -1,6 +1,6 @@
 ---
 - name: 挂载数据磁盘
-  hosts: all
+  hosts: "{{ webserver }}"
   become: yes
   gather_facts: yes
 

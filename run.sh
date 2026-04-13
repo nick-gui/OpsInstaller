@@ -7,6 +7,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ANSIBLE_DIR="$SCRIPT_DIR/ansible"
 PLAYBOOKS_DIR="$ANSIBLE_DIR/playbooks"
 
+# 清理临时文件的函数
+cleanup() {
+    if [ -n "$TEMP_INVENTORY_FILE" ] && [ -f "$TEMP_INVENTORY_FILE" ]; then
+        log_info "清理临时 inventory 文件..."
+        rm -f "$TEMP_INVENTORY_FILE"
+    fi
+}
+
+# 设置 trap，确保脚本退出时清理临时文件
+trap cleanup EXIT
+
 # 检测终端是否支持颜色
 if [ -t 1 ] && command -v tput > /dev/null && tput colors > /dev/null 2>&1; then
     RED='\033[0;31m'
@@ -156,18 +167,19 @@ select_hosts() {
     echo ""
 
     INVENTORY_OPT=""
-    LIMIT_OPT=""
+    EXTRA_VARS_OPT=""
+    TEMP_INVENTORY_FILE=""
 
     while true; do
-        read -p "请选择目标主机范围 (1-4，默认 1，输入 exit 退出): " host_choice
+        read -p "请选择目标主机范围 (1-4，默认 4，输入 exit 退出): " host_choice
         if [ "$host_choice" = "exit" ]; then
             log_info "已退出程序"
             exit 0
         fi
-        host_choice=${host_choice:-1}
+        host_choice=${host_choice:-4}
 
         if [ "$host_choice" = "1" ]; then
-            LIMIT_OPT=""
+            EXTRA_VARS_OPT="-e webserver=all"
             break
         elif [ "$host_choice" = "2" ]; then
             read -p "请输入主机组名称 (输入 exit 退出): " host_group
@@ -176,7 +188,7 @@ select_hosts() {
                 exit 0
             fi
             if [ -n "$host_group" ]; then
-                LIMIT_OPT="--limit $host_group"
+                EXTRA_VARS_OPT="-e webserver=${host_group}"
                 break
             else
                 log_error "主机组名称不能为空"
@@ -188,7 +200,7 @@ select_hosts() {
                 exit 0
             fi
             if [ -n "$host_name" ]; then
-                LIMIT_OPT="--limit $host_name"
+                EXTRA_VARS_OPT="-e webserver=${host_name}"
                 break
             else
                 log_error "主机名称不能为空"
@@ -200,11 +212,17 @@ select_hosts() {
                 exit 0
             fi
             if [ -n "$host_ips" ]; then
-                if [[ "$host_ips" != *","* ]]; then
-                    host_ips="${host_ips},"
-                fi
-                INVENTORY_OPT="-i $host_ips"
-                LIMIT_OPT=""
+                local timestamp=$(date +%s)
+                local group_name="web_${timestamp}"
+                TEMP_INVENTORY_FILE="$ANSIBLE_DIR/inventory/temp_${timestamp}.ini"
+
+                # 创建临时 inventory 文件
+                echo "[${group_name}]" > "$TEMP_INVENTORY_FILE"
+                # 将逗号分隔的 IP 转换为换行
+                echo "$host_ips" | tr ',' '\n' | grep -v '^$' >> "$TEMP_INVENTORY_FILE"
+
+                INVENTORY_OPT="-i $TEMP_INVENTORY_FILE"
+                EXTRA_VARS_OPT="-e webserver=${group_name}"
                 break
             else
                 log_error "服务器 IP 不能为空"
@@ -216,7 +234,7 @@ select_hosts() {
 }
 
 confirm_execution() {
-    local limit_opt="$1"
+    local extra_vars_opt="$1"
     local inventory_opt="$2"
     shift 2
     local playbook_files=("$@")
@@ -233,8 +251,9 @@ confirm_execution() {
         local display_ips=${inventory_opt#-i }
         display_ips=${display_ips%,}
         echo -e "  主机范围: ${BLUE}临时 IP ($display_ips)${NC}"
-    elif [ -n "$limit_opt" ]; then
-        echo -e "  主机范围: ${BLUE}$limit_opt${NC}"
+    elif [ -n "$extra_vars_opt" ]; then
+        local display_host=${extra_vars_opt#-e webserver=}
+        echo -e "  主机范围: ${BLUE}$display_host${NC}"
     else
         echo -e "  主机范围: ${BLUE}所有主机${NC}"
     fi
@@ -311,7 +330,7 @@ show_extra_options() {
 }
 
 execute_playbook() {
-    local limit_opt="$1"
+    local extra_vars_opt="$1"
     local extra_opt="$2"
     local inventory_opt="$3"
     shift 3
@@ -328,7 +347,7 @@ execute_playbook() {
         log_info "正在执行: $pb_name"
         echo ""
 
-        local cmd="ansible-playbook $pb $inventory_opt $limit_opt $extra_opt"
+        local cmd="ansible-playbook $pb $inventory_opt $extra_vars_opt $extra_opt"
         log_info "执行命令: $cmd"
         echo ""
 
@@ -374,8 +393,8 @@ main() {
     select_hosts
     show_extra_options
 
-    if confirm_execution "$LIMIT_OPT" "$INVENTORY_OPT" "${SELECTED_PLAYBOOKS[@]}"; then
-        execute_playbook "$LIMIT_OPT" "$EXTRA_OPT" "$INVENTORY_OPT" "${SELECTED_PLAYBOOKS[@]}"
+    if confirm_execution "$EXTRA_VARS_OPT" "$INVENTORY_OPT" "${SELECTED_PLAYBOOKS[@]}"; then
+        execute_playbook "$EXTRA_VARS_OPT" "$EXTRA_OPT" "$INVENTORY_OPT" "${SELECTED_PLAYBOOKS[@]}"
     fi
 }
 
