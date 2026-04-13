@@ -63,7 +63,7 @@ list_playbooks() {
     local playbooks=()
     local index=1
 
-    while IFS= read -r -d '' file; do
+    while IFS= read -r file; do
         playbooks+=("$file")
         local filename=$(basename "$file")
         local desc=$(get_playbook_description "$file")
@@ -71,7 +71,7 @@ list_playbooks() {
         echo -e "     描述: $desc"
         echo ""
         index=$((index + 1))
-    done < <(find "$PLAYBOOKS_DIR" -maxdepth 1 -name "*.yaml" -type f -print0 | sort -z)
+    done < <(find "$PLAYBOOKS_DIR" -maxdepth 1 -name "*.yaml" -type f | sort)
 
     if [ ${#playbooks[@]} -eq 0 ]; then
         log_error "未找到任何 Playbook 文件"
