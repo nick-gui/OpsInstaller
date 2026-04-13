@@ -236,62 +236,6 @@ select_hosts() {
     done
 }
 
-confirm_execution() {
-    local extra_vars_opt="$1"
-    local inventory_opt="$2"
-    shift 2
-    local playbook_files=("$@")
-
-    log_title "执行确认"
-    echo ""
-    echo -e "  Playbook(s):"
-    for pb in "${playbook_files[@]}"; do
-        local pb_name=$(basename "$pb")
-        local pb_desc=$(get_playbook_description "$pb")
-        echo -e "    ${BLUE}- $pb_name${NC} ($pb_desc)"
-    done
-    if [ -n "$inventory_opt" ]; then
-        local inventory_file=${inventory_opt#-i }
-        local display_ips=""
-        if [ -f "$inventory_file" ]; then
-            display_ips=$(awk 'NF && $1 !~ /^\[/ && $1 !~ /^#/{print $1}' "$inventory_file" | paste -sd "," -)
-        fi
-        if [ -n "$display_ips" ]; then
-            echo -e "  主机范围: ${BLUE}临时 IP ($display_ips)${NC}"
-        else
-            echo -e "  主机范围: ${BLUE}临时 inventory ($inventory_file)${NC}"
-        fi
-    elif [ -n "$extra_vars_opt" ]; then
-        local display_host=${extra_vars_opt#-e webserver=}
-        echo -e "  主机范围: ${BLUE}$display_host${NC}"
-    else
-        echo -e "  主机范围: ${BLUE}所有主机${NC}"
-    fi
-    echo ""
-
-    while true; do
-        read -p "确认执行? (y/n，默认 y，输入 exit 退出): " confirm
-        if [ "$confirm" = "exit" ]; then
-            log_info "已退出程序"
-            exit 0
-        fi
-        confirm=${confirm:-y}
-
-        case "$confirm" in
-            [Yy]*)
-                return 0
-                ;;
-            [Nn]*)
-                log_info "已取消执行"
-                return 1
-                ;;
-            *)
-                log_error "无效的输入，请输入 y 或 n"
-                ;;
-        esac
-    done
-}
-
 show_extra_options() {
     echo ""
     log_title "额外选项"
