@@ -1,2 +1,8 @@
 ---
 # supervisor role 默认变量
+supervisor_http_enabled: false
+supervisor_http_port: 9999
+supervisor_http_username: "dev"
+supervisor_http_password: "Dev@100"
+supervisor_log_dir: "/tmp"
+supervisor_include_dir: "/etc/supervisor/conf.d"

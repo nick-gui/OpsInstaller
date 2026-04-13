@@ -14,17 +14,23 @@
 
 - name: 创建 Supervisor 配置目录
   file:
-    path: /etc/supervisor/conf.d
+    path: "{{ supervisor_include_dir }}"
     state: directory
     mode: '0755'
 
-- name: 配置 Supervisor 主配置文件
-  lineinfile:
-    path: /etc/supervisord.conf
-    line: "files = /etc/supervisor/conf.d/*.conf"
-    regexp: "^files\s*="
-    state: present
+- name: 下发 Supervisor 主配置文件 (RedHat/CentOS)
+  template:
+    src: supervisord.conf.j2
+    dest: /etc/supervisord.conf
+    mode: "0644"
   when: ansible_os_family == 'RedHat'
+
+- name: 下发 Supervisor 主配置文件 (Debian/Ubuntu)
+  template:
+    src: supervisord.conf.j2
+    dest: /etc/supervisor/supervisord.conf
+    mode: "0644"
+  when: ansible_os_family == 'Debian'
 
 - name: 启动并启用 Supervisor 服务
   systemd:

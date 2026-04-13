@@ -10,3 +10,4 @@
     - role: disk
     - role: directory
     - role: sysctl
+    - role: system_update
