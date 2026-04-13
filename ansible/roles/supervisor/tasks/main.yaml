@@ -1,0 +1,41 @@
+---
+- name: 安装 Supervisor (RedHat/CentOS)
+  yum:
+    name: supervisor
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: 安装 Supervisor (Debian/Ubuntu)
+  apt:
+    name: supervisor
+    state: present
+    update_cache: yes
+  when: ansible_os_family == 'Debian'
+
+- name: 创建 Supervisor 配置目录
+  file:
+    path: /etc/supervisor/conf.d
+    state: directory
+    mode: '0755'
+
+- name: 配置 Supervisor 主配置文件
+  lineinfile:
+    path: /etc/supervisord.conf
+    line: "files = /etc/supervisor/conf.d/*.conf"
+    regexp: "^files\s*="
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: 启动并启用 Supervisor 服务
+  systemd:
+    name: supervisord
+    state: started
+    enabled: yes
+  when: ansible_os_family == 'RedHat'
+
+- name: 启动并启用 Supervisor 服务 (Debian/Ubuntu)
+  systemd:
+    name: supervisor
+    state: started
+    enabled: yes
+  when: ansible_os_family == 'Debian'

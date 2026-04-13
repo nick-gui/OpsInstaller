@@ -1,0 +1,14 @@
+---
+- name: 完整安装部署
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - role: common
+    - role: directory
+    - role: sysctl
+    - role: git
+    - role: docker
+    - role: supervisor
+    - role: disk

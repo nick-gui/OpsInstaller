@@ -1,0 +1,9 @@
+---
+- name: 配置系统内核参数
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+    sysctl_set: yes
+  loop: "{{ sysctl_config }}"

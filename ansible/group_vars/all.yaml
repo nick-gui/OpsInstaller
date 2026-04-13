@@ -1,0 +1,53 @@
+---
+# 全局变量配置
+
+# 系统配置
+system_timezone: "Asia/Shanghai"
+system_locale: "en_US.UTF-8"
+
+# 目录结构
+base_directories:
+  - path: "/data"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  - path: "/data/logs"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  - path: "/data/apps"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  - path: "/data/config"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+
+# 系统参数优化
+sysctl_config:
+  - key: "net.core.somaxconn"
+    value: "65535"
+  - key: "net.ipv4.tcp_max_syn_backlog"
+    value: "65535"
+  - key: "net.ipv4.ip_local_port_range"
+    value: "1024 65535"
+  - key: "net.ipv4.tcp_tw_reuse"
+    value: "1"
+  - key: "net.ipv4.tcp_fin_timeout"
+    value: "30"
+  - key: "vm.swappiness"
+    value: "0"
+  - key: "vm.overcommit_memory"
+    value: "1"
+
+# 软件版本
+docker_version: "26.0.0"
+git_version: ""
+supervisor_version: ""
+
+# Docker 配置
+docker_data_root: "/data/docker"
+docker_registry_mirrors:
+  - "https://docker.mirrors.ustc.edu.cn"
+  - "https://hub-mirror.c.163.com"

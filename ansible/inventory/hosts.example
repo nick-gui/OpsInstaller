@@ -1,0 +1,15 @@
+# Ansible 主机清单示例
+
+[web_servers]
+web01 ansible_host=192.168.1.10 ansible_user=root
+web02 ansible_host=192.168.1.11 ansible_user=root
+
+[db_servers]
+db01 ansible_host=192.168.1.20 ansible_user=root
+
+[all_servers:children]
+web_servers
+db_servers
+
+[all_servers:vars]
+ansible_ssh_common_args='-o StrictHostKeyChecking=no'

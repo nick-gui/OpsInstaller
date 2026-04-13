@@ -1,0 +1,10 @@
+---
+- name: 服务器初始化
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - role: common
+    - role: directory
+    - role: sysctl

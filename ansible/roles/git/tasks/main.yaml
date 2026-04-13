@@ -1,0 +1,27 @@
+---
+- name: 安装 Git (RedHat/CentOS)
+  yum:
+    name: git
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: 安装 Git (Debian/Ubuntu)
+  apt:
+    name: git
+    state: present
+    update_cache: yes
+  when: ansible_os_family == 'Debian'
+
+- name: 配置 Git 默认用户
+  git_config:
+    name: user.name
+    scope: system
+    value: "OpsInstaller"
+  ignore_errors: yes
+
+- name: 配置 Git 默认邮箱
+  git_config:
+    name: user.email
+    scope: system
+    value: "ops@example.com"
+  ignore_errors: yes

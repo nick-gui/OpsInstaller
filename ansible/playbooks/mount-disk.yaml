@@ -1,0 +1,8 @@
+---
+- name: 挂载数据磁盘
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - role: disk

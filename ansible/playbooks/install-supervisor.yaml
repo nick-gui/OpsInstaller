@@ -1,0 +1,8 @@
+---
+- name: 安装 Supervisor
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - role: supervisor

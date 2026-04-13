@@ -1,0 +1,3 @@
+---
+# disk role 默认变量
+disk_mounts: []

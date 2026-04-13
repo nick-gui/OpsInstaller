@@ -1,0 +1,8 @@
+---
+- name: 安装基础工具
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - role: git

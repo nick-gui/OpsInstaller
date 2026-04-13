@@ -1,0 +1,108 @@
+---
+- name: 卸载旧版本 Docker (RedHat/CentOS)
+  yum:
+    name:
+      - docker
+      - docker-client
+      - docker-client-latest
+      - docker-common
+      - docker-latest
+      - docker-latest-logrotate
+      - docker-logrotate
+      - docker-engine
+    state: absent
+  when: ansible_os_family == 'RedHat'
+
+- name: 卸载旧版本 Docker (Debian/Ubuntu)
+  apt:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+  when: ansible_os_family == 'Debian'
+
+- name: 安装 Docker 依赖 (RedHat/CentOS)
+  yum:
+    name:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: 添加 Docker GPG 密钥 (RedHat/CentOS)
+  rpm_key:
+    key: https://download.docker.com/linux/centos/gpg
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: 添加 Docker YUM 仓库 (RedHat/CentOS)
+  get_url:
+    url: "https://download.docker.com/linux/centos/docker-ce.repo"
+    dest: /etc/yum.repos.d/docker-ce.repo
+  when: ansible_os_family == 'RedHat'
+
+- name: 添加 Docker GPG 密钥 (Debian/Ubuntu)
+  apt_key:
+    url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: 添加 Docker APT 仓库 (Debian/Ubuntu)
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+    state: present
+  when: ansible_os_family == 'Debian'
+
+- name: 安装 Docker CE (RedHat/CentOS)
+  yum:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: 安装 Docker CE (Debian/Ubuntu)
+  apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-buildx-plugin
+      - docker-compose-plugin
+    state: present
+    update_cache: yes
+  when: ansible_os_family == 'Debian'
+
+- name: 创建 Docker 数据目录
+  file:
+    path: "{{ docker_data_root }}"
+    state: directory
+    mode: '0711'
+
+- name: 配置 Docker daemon
+  template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    mode: '0644'
+  notify:
+    - restart docker
+
+- name: 启动并启用 Docker 服务
+  systemd:
+    name: docker
+    state: started
+    enabled: yes
+    daemon_reload: yes
+
+- name: 启动并启用 containerd 服务
+  systemd:
+    name: containerd
+    state: started
+    enabled: yes

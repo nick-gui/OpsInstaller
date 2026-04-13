@@ -1,0 +1,25 @@
+---
+- name: 检查并格式化磁盘
+  filesystem:
+    fstype: "{{ item.fstype | default('ext4') }}"
+    dev: "{{ item.device }}"
+    force: no
+  loop: "{{ disk_mounts }}"
+  when: disk_mounts | length > 0
+
+- name: 创建挂载点
+  file:
+    path: "{{ item.mount_path }}"
+    state: directory
+    mode: "{{ item.mode | default('0755') }}"
+  loop: "{{ disk_mounts }}"
+  when: disk_mounts | length > 0
+
+- name: 挂载磁盘
+  mount:
+    path: "{{ item.mount_path }}"
+    src: "{{ item.device }}"
+    fstype: "{{ item.fstype | default('ext4') }}"
+    state: mounted
+  loop: "{{ disk_mounts }}"
+  when: disk_mounts | length > 0
