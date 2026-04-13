@@ -59,5 +59,6 @@ nacos_mysql_init_dir: "/ROOT/conf/nacos/mysql-init"
 
 # Nacos SQL 初始化文件下载（从 GitHub 获取对应版本）
 # latest 使用 master 分支，指定版本使用对应 tag
+# 源地址: https://github.com/alibaba/nacos/blob/master/distribution/conf/mysql-schema.sql
 nacos_sql_url_primary: "https://raw.githubusercontent.com/alibaba/nacos/{{ 'master' if nacos_version == 'latest' else nacos_version }}/distribution/conf/mysql-schema.sql"
-nacos_sql_url_fallback: "https://ghproxy.com/https://raw.githubusercontent.com/alibaba/nacos/{{ 'master' if nacos_version == 'latest' else nacos_version }}/distribution/conf/mysql-schema.sql"
+nacos_sql_url_fallback: "https://mirror.ghproxy.com/https://raw.githubusercontent.com/alibaba/nacos/{{ 'master' if nacos_version == 'latest' else nacos_version }}/distribution/conf/mysql-schema.sql"
