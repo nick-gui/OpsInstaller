@@ -1,0 +1,8 @@
+---
+- name: 同步 SSH 密钥
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - role: ssh_keys

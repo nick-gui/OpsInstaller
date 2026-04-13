@@ -1,0 +1,31 @@
+---
+- name: 创建用户 .ssh 目录
+  file:
+    path: "{{ item.home_dir }}/.ssh"
+    owner: "{{ item.user }}"
+    group: "{{ item.group | default(item.user) }}"
+    mode: "0700"
+    state: directory
+  loop: "{{ ssh_keys_config }}"
+  when: ssh_keys_config | length > 0
+
+- name: 创建 authorized_keys 文件
+  file:
+    path: "{{ item.home_dir }}/.ssh/authorized_keys"
+    owner: "{{ item.user }}"
+    group: "{{ item.group | default(item.user) }}"
+    mode: "0600"
+    state: touch
+    access_time: preserve
+    modification_time: preserve
+  loop: "{{ ssh_keys_config }}"
+  when: ssh_keys_config | length > 0
+
+- name: 同步 SSH 公钥到 authorized_keys
+  lineinfile:
+    path: "{{ item.0.home_dir }}/.ssh/authorized_keys"
+    line: "{{ item.1 }}"
+    state: present
+    create: no
+  loop: "{{ ssh_keys_config | subelements('ssh_keys', skip_missing=True) }}"
+  when: ssh_keys_config | length > 0

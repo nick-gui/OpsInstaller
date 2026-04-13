@@ -7,12 +7,22 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ANSIBLE_DIR="$SCRIPT_DIR/ansible"
 PLAYBOOKS_DIR="$ANSIBLE_DIR/playbooks"
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+# 检测终端是否支持颜色
+if [ -t 1 ] && command -v tput > /dev/null && tput colors > /dev/null 2>&1; then
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'
+    CYAN='\033[0;36m'
+    NC='\033[0m'
+else
+    RED=''
+    GREEN=''
+    YELLOW=''
+    BLUE=''
+    CYAN=''
+    NC=''
+fi
 
 log_info() {
     echo -e "${GREEN}[INFO]${NC} $1"
@@ -56,7 +66,7 @@ get_playbook_description() {
     fi
 }
 
-list_playbooks() {
+select_playbook() {
     log_title "可用的 Playbook 列表"
     echo ""
 
@@ -67,41 +77,73 @@ list_playbooks() {
         playbooks+=("$file")
         local filename=$(basename "$file")
         local desc=$(get_playbook_description "$file")
-        echo -e "  ${BLUE}$index${NC}. $filename"
-        echo -e "     描述: $desc"
+        echo -e "  ${BLUE}$index${NC}. $filename ($desc)"
         echo ""
         index=$((index + 1))
     done < <(find "$PLAYBOOKS_DIR" -maxdepth 1 -name "*.yaml" -type f | sort)
 
-    if [ ${#playbooks[@]} -eq 0 ]; then
+    local count=${#playbooks[@]}
+
+    if [ ${count} -eq 0 ]; then
         log_error "未找到任何 Playbook 文件"
         exit 1
     fi
 
-    echo "${playbooks[@]}"
-}
-
-select_playbook() {
-    local playbooks_str=$(list_playbooks)
-    local -a playbooks=($playbooks_str)
-    local count=${#playbooks[@]}
-
-    if [ $count -eq 0 ]; then
-        exit 1
-    fi
+    echo -e "  ${BLUE}提示${NC}: 支持多选，例如输入 '1,3,5' 或 '1-3,5' 或 'all'"
+    echo ""
 
     while true; do
-        read -p "请选择要执行的 Playbook (1-$count): " choice
-        if [[ $choice =~ ^[0-9]+$ ]] && [ $choice -ge 1 ] && [ $choice -le $count ]; then
-            selected_index=$((choice - 1))
-            selected_playbook=${playbooks[$selected_index]}
+        read -p "请选择要执行的 Playbook (1-${count}，输入 exit 退出): " choice
+        if [ "$choice" = "exit" ]; then
+            log_info "已退出程序"
+            exit 0
+        fi
+
+        SELECTED_PLAYBOOKS=()
+        local valid=true
+
+        if [ "$choice" = "all" ]; then
+            for ((i=0; i<${count}; i++)); do
+                SELECTED_PLAYBOOKS+=("${playbooks[$i]}")
+            done
+            break
+        fi
+
+        IFS=',' read -ra selections <<< "$choice"
+        for sel in "${selections[@]}"; do
+            sel=$(echo "$sel" | xargs)
+            if [[ $sel =~ ^[0-9]+$ ]]; then
+                if [ "$sel" -ge 1 ] && [ "$sel" -le "${count}" ]; then
+                    selected_index=$((sel - 1))
+                    SELECTED_PLAYBOOKS+=("${playbooks[$selected_index]}")
+                else
+                    valid=false
+                    break
+                fi
+            elif [[ $sel =~ ^([0-9]+)-([0-9]+)$ ]]; then
+                start=${BASH_REMATCH[1]}
+                end=${BASH_REMATCH[2]}
+                if [ "$start" -ge 1 ] && [ "$end" -le "${count}" ] && [ "$start" -le "$end" ]; then
+                    for ((i=start; i<=end; i++)); do
+                        selected_index=$((i - 1))
+                        SELECTED_PLAYBOOKS+=("${playbooks[$selected_index]}")
+                    done
+                else
+                    valid=false
+                    break
+                fi
+            else
+                valid=false
+                break
+            fi
+        done
+
+        if [ "$valid" = true ] && [ ${#SELECTED_PLAYBOOKS[@]} -gt 0 ]; then
             break
         else
-            log_error "无效的选择，请输入 1 到 $count 之间的数字"
+            log_error "无效的选择，请输入 1 到 ${count} 之间的数字，多个用逗号分隔（如 1,3,5）或范围（如 1-3），或输入 'all' 选择全部"
         fi
     done
-
-    echo "$selected_playbook"
 }
 
 select_hosts() {
@@ -110,51 +152,88 @@ select_hosts() {
     echo -e "  ${BLUE}1${NC}. 所有主机 (all)"
     echo -e "  ${BLUE}2${NC}. 指定主机组"
     echo -e "  ${BLUE}3${NC}. 指定单台主机"
+    echo -e "  ${BLUE}4${NC}. 输入服务器 IP (临时主机)"
     echo ""
 
+    INVENTORY_OPT=""
+    LIMIT_OPT=""
+
     while true; do
-        read -p "请选择目标主机范围 (1-3，默认 1): " host_choice
+        read -p "请选择目标主机范围 (1-4，默认 1，输入 exit 退出): " host_choice
+        if [ "$host_choice" = "exit" ]; then
+            log_info "已退出程序"
+            exit 0
+        fi
         host_choice=${host_choice:-1}
 
         if [ "$host_choice" = "1" ]; then
-            limit_option=""
+            LIMIT_OPT=""
             break
         elif [ "$host_choice" = "2" ]; then
-            read -p "请输入主机组名称: " host_group
+            read -p "请输入主机组名称 (输入 exit 退出): " host_group
+            if [ "$host_group" = "exit" ]; then
+                log_info "已退出程序"
+                exit 0
+            fi
             if [ -n "$host_group" ]; then
-                limit_option="--limit $host_group"
+                LIMIT_OPT="--limit $host_group"
                 break
             else
                 log_error "主机组名称不能为空"
             fi
         elif [ "$host_choice" = "3" ]; then
-            read -p "请输入主机名称: " host_name
+            read -p "请输入主机名称 (输入 exit 退出): " host_name
+            if [ "$host_name" = "exit" ]; then
+                log_info "已退出程序"
+                exit 0
+            fi
             if [ -n "$host_name" ]; then
-                limit_option="--limit $host_name"
+                LIMIT_OPT="--limit $host_name"
                 break
             else
                 log_error "主机名称不能为空"
             fi
+        elif [ "$host_choice" = "4" ]; then
+            read -p "请输入服务器 IP (多个 IP 用逗号分隔，输入 exit 退出): " host_ips
+            if [ "$host_ips" = "exit" ]; then
+                log_info "已退出程序"
+                exit 0
+            fi
+            if [ -n "$host_ips" ]; then
+                if [[ "$host_ips" != *","* ]]; then
+                    host_ips="${host_ips},"
+                fi
+                INVENTORY_OPT="-i $host_ips"
+                LIMIT_OPT=""
+                break
+            else
+                log_error "服务器 IP 不能为空"
+            fi
         else
-            log_error "无效的选择，请输入 1 到 3 之间的数字"
+            log_error "无效的选择，请输入 1 到 4 之间的数字"
         fi
     done
-
-    echo "$limit_option"
 }
 
 confirm_execution() {
-    local playbook_file="$1"
-    local limit_opt="$2"
-
-    local playbook_name=$(basename "$playbook_file")
-    local playbook_desc=$(get_playbook_description "$playbook_file")
+    local limit_opt="$1"
+    local inventory_opt="$2"
+    shift 2
+    local playbook_files=("$@")
 
     log_title "执行确认"
     echo ""
-    echo -e "  Playbook: ${BLUE}$playbook_name${NC}"
-    echo -e "  描述:     $playbook_desc"
-    if [ -n "$limit_opt" ]; then
+    echo -e "  Playbook(s):"
+    for pb in "${playbook_files[@]}"; do
+        local pb_name=$(basename "$pb")
+        local pb_desc=$(get_playbook_description "$pb")
+        echo -e "    ${BLUE}- $pb_name${NC} ($pb_desc)"
+    done
+    if [ -n "$inventory_opt" ]; then
+        local display_ips=${inventory_opt#-i }
+        display_ips=${display_ips%,}
+        echo -e "  主机范围: ${BLUE}临时 IP ($display_ips)${NC}"
+    elif [ -n "$limit_opt" ]; then
         echo -e "  主机范围: ${BLUE}$limit_opt${NC}"
     else
         echo -e "  主机范围: ${BLUE}所有主机${NC}"
@@ -162,7 +241,11 @@ confirm_execution() {
     echo ""
 
     while true; do
-        read -p "确认执行? (y/n，默认 y): " confirm
+        read -p "确认执行? (y/n，默认 y，输入 exit 退出): " confirm
+        if [ "$confirm" = "exit" ]; then
+            log_info "已退出程序"
+            exit 0
+        fi
         confirm=${confirm:-y}
 
         case "$confirm" in
@@ -192,60 +275,90 @@ show_extra_options() {
     echo ""
 
     while true; do
-        read -p "请选择执行模式 (1-5，默认 1): " mode_choice
+        read -p "请选择执行模式 (1-5，默认 1，输入 exit 退出): " mode_choice
+        if [ "$mode_choice" = "exit" ]; then
+            log_info "已退出程序"
+            exit 0
+        fi
         mode_choice=${mode_choice:-1}
 
         case "$mode_choice" in
             1)
-                extra_options=""
+                EXTRA_OPT=""
                 break
                 ;;
             2)
-                extra_options="--check"
+                EXTRA_OPT="--check"
                 break
                 ;;
             3)
-                extra_options="--check --diff"
+                EXTRA_OPT="--check --diff"
                 break
                 ;;
             4)
-                extra_options="-v"
+                EXTRA_OPT="-v"
                 break
                 ;;
             5)
-                extra_options="-vvv"
+                EXTRA_OPT="-vvv"
                 break
-                ;;
+            ;;
             *)
                 log_error "无效的选择，请输入 1 到 5 之间的数字"
                 ;;
         esac
     done
-
-    echo "$extra_options"
 }
 
 execute_playbook() {
-    local playbook_file="$1"
-    local limit_opt="$2"
-    local extra_opt="$3"
+    local limit_opt="$1"
+    local extra_opt="$2"
+    local inventory_opt="$3"
+    shift 3
+    local playbook_files=("$@")
 
     log_title "开始执行"
     echo ""
 
     cd "$ANSIBLE_DIR"
 
-    local cmd="ansible-playbook $playbook_file $limit_opt $extra_opt"
-    log_info "执行命令: $cmd"
-    echo ""
+    local all_success=true
+    for pb in "${playbook_files[@]}"; do
+        local pb_name=$(basename "$pb")
+        log_info "正在执行: $pb_name"
+        echo ""
 
-    if eval "$cmd"; then
+        local cmd="ansible-playbook $pb $inventory_opt $limit_opt $extra_opt"
+        log_info "执行命令: $cmd"
         echo ""
-        log_info "Playbook 执行成功！"
+
+        if eval "$cmd"; then
+            echo ""
+            log_info "$pb_name 执行成功！"
+            echo ""
+        else
+            echo ""
+            log_error "$pb_name 执行失败！"
+            echo ""
+            all_success=false
+        fi
+    done
+
+    if [ "$all_success" = true ]; then
+        log_info "所有 Playbook 执行完成！"
+        return 0
     else
-        echo ""
-        log_error "Playbook 执行失败！"
+        log_warn "部分 Playbook 执行失败，请检查上方输出"
         return 1
+    fi
+}
+
+load_env() {
+    if [ -f "$SCRIPT_DIR/.env" ]; then
+        log_info "发现 .env 文件，正在加载环境变量..."
+        set -a
+        source "$SCRIPT_DIR/.env"
+        set +a
     fi
 }
 
@@ -255,15 +368,14 @@ main() {
     check_ansible
 
     cd "$SCRIPT_DIR"
+    load_env
 
-    selected_playbook=$(select_playbook)
+    select_playbook
+    select_hosts
+    show_extra_options
 
-    limit_opt=$(select_hosts)
-
-    extra_opt=$(show_extra_options)
-
-    if confirm_execution "$selected_playbook" "$limit_opt"; then
-        execute_playbook "$selected_playbook" "$limit_opt" "$extra_opt"
+    if confirm_execution "$LIMIT_OPT" "$INVENTORY_OPT" "${SELECTED_PLAYBOOKS[@]}"; then
+        execute_playbook "$LIMIT_OPT" "$EXTRA_OPT" "$INVENTORY_OPT" "${SELECTED_PLAYBOOKS[@]}"
     fi
 }
 

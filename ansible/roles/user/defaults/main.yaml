@@ -1,0 +1,10 @@
+---
+# user role 默认变量
+system_users: []
+# 示例:
+# system_users:
+#   - name: "www"
+#     group: "www"
+#     uid: 1000
+#     shell: "/bin/bash"
+#     sudo: true

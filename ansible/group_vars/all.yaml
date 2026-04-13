@@ -5,24 +5,90 @@
 system_timezone: "Asia/Shanghai"
 system_locale: "en_US.UTF-8"
 
+# 用户配置
+system_users:
+  - name: "www"
+    group: "www"
+    uid: 701
+    shell: "/bin/bash"
+    sudo: true
+  - name: "rouser"
+    group: "rouser"
+    uid: 1000
+    shell: "/bin/bash"
+    sudo: false
+
 # 目录结构
 base_directories:
-  - path: "/data"
+  - path: "/ROOT"
     owner: "root"
     group: "root"
     mode: "0755"
-  - path: "/data/logs"
+  - path: "/ROOT/BACKUP"
     owner: "root"
     group: "root"
     mode: "0755"
-  - path: "/data/apps"
+  - path: "/ROOT/bin"
     owner: "root"
     group: "root"
     mode: "0755"
-  - path: "/data/config"
+  - path: "/ROOT/conf"
     owner: "root"
     group: "root"
     mode: "0755"
+  - path: "/ROOT/data"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  - path: "/ROOT/sh"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+  - path: "/ROOT/log"
+    owner: "www"
+    group: "www"
+    mode: "0755"
+  - path: "/ROOT/server"
+    owner: "www"
+    group: "www"
+    mode: "0755"
+  - path: "/ROOT/www"
+    owner: "www"
+    group: "www"
+    mode: "0755"
+
+# 磁盘挂载配置
+# 示例配置，根据实际设备路径修改
+disk_mounts: []
+# disk_mounts:
+#   - device: "/dev/sdb1"
+#     mount_path: "/data"
+#     fstype: "ext4"
+#     mode: "0755"
+#   - device: "/dev/sdc1"
+#     mount_path: "/backup"
+#     fstype: "xfs"
+#     mode: "0755"
+
+# SSH 密钥同步配置
+# 示例配置，根据实际需要修改
+ssh_keys_config: []
+# ssh_keys_config:
+#   - user: "root"
+#     group: "root"
+#     home_dir: "/root"
+#     ssh_keys:
+#       - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDS+8VVeJDinyaPvp9vSZNTz3/PkT9EzpiQoA2/PtmfvNqq7Ld00LRvvL31fS1O0cSbKthF2XK/FyF8ya8DjmXFXJNMJde4J5ntgncRDqch4UIAtnLy9Rws74cdvUpJwmFmCXJlMdtPGMAqak6cSzIH8/yTyc/e1EnDNciFwPV9GaDMPkpL8bAWqXh8RtD7tK1Jjf6DQbVcG7X6CGTXKtTRDDs6CnqtT7c35Z4W/GdR6RUh9fCFiQmX1NoXTZQSwq6oHpj7hO1Y2pzl2/xKfaQL6hvE6HKX0XeegeI4QoZgDg9lDPrKtVpy2257GAknGYfrHIhiWJNUthCjubyfOs0/ root@ops-jumserver-11"
+#   - user: "www"
+#     group: "www"
+#     home_dir: "/home/www"
+#     ssh_keys:
+#       - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCuFRttVCLtscTncRSRYWf7NrBi3vuvd9/S7EKe6Gk4jr6l0EBc3jnSV1aldwhEd10HJhGQbo5yPD/upjznXTrJyTVKeM0jyX7JVILAmA7pQB3SIVTmL1arBs9OQ4niWpCpkVAa4iENmlOpJ+VQZ0k+ketykh0+mcFrBcD5/iVlgYB9eh1NDg45pDy3l+MnxSf0krr7Kj19gw3SDeVmV+gdgvIhuwme4K6i/YFss6CmJqZpB6ONAZ1gkLNBqVFvkjBMjr1ydScfRNKRmnGqfLyllMGOYBzzAzEH6C2I09hltpaC4NFPp8aaMSZVTtkhRwIwO/eKjXeoP9AODp+hA/+N rouser@online-jenkins-s1"
+#   - user: "rouser"
+#     group: "rouser"
+#     home_dir: "/home/rouser"
+#     ssh_keys:
+#       - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCuFRttVCLtscTncRSRYWf7NrBi3vuvd9/S7EKe6Gk4jr6l0EBc3jnSV1aldwhEd10HJhGQbo5yPD/upjznXTrJyTVKeM0jyX7JVILAmA7pQB3SIVTmL1arBs9OQ4niWpCpkVAa4iENmlOpJ+VQZ0k+ketykh0+mcFrBcD5/iVlgYB9eh1NDg45pDy3l+MnxSf0krr7Kj19gw3SDeVmV+gdgvIhuwme4K6i/YFss6CmJqZpB6ONAZ1gkLNBqVFvkjBMjr1ydScfRNKRmnGqfLyllMGOYBzzAzEH6C2I09hltpaC4NFPp8aaMSZVTtkhRwIwO/eKjXeoP9AODp+hA/+N rouser@online-jenkins-s1"
 
 # 系统参数优化
 sysctl_config:
@@ -30,16 +96,6 @@ sysctl_config:
     value: "65535"
   - key: "net.ipv4.tcp_max_syn_backlog"
     value: "65535"
-  - key: "net.ipv4.ip_local_port_range"
-    value: "1024 65535"
-  - key: "net.ipv4.tcp_tw_reuse"
-    value: "1"
-  - key: "net.ipv4.tcp_fin_timeout"
-    value: "30"
-  - key: "vm.swappiness"
-    value: "0"
-  - key: "vm.overcommit_memory"
-    value: "1"
 
 # 软件版本
 docker_version: "26.0.0"

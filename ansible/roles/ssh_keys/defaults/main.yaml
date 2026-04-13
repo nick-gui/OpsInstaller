@@ -1,0 +1,3 @@
+---
+# ssh_keys role 默认变量
+ssh_keys_config: []

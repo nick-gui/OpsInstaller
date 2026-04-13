@@ -4,5 +4,26 @@
   become: yes
   gather_facts: yes
 
+  vars_prompt:
+    - name: "disk_device"
+      prompt: "请输入磁盘设备路径（例如 /dev/sdb1）"
+      private: no
+    - name: "mount_path"
+      prompt: "请输入挂载点路径（例如 /data）"
+      private: no
+    - name: "filesystem_type"
+      prompt: "请输入文件系统类型（默认 ext4）"
+      default: "ext4"
+      private: no
+
+  pre_tasks:
+    - name: 设置交互式磁盘挂载配置
+      set_fact:
+        disk_mounts:
+          - device: "{{ disk_device }}"
+            mount_path: "{{ mount_path }}"
+            fstype: "{{ filesystem_type }}"
+      when: disk_device is defined and disk_device != ""
+
   roles:
     - role: disk

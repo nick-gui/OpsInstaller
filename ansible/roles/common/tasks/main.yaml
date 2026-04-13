@@ -40,39 +40,3 @@
     state: present
     update_cache: yes
   when: ansible_os_family == 'Debian'
-
-- name: 配置 Vim 基础配置
-  copy:
-    content: |
-      set nocompatible
-      set encoding=utf-8
-      set fileencodings=utf-8,gbk,gb2312
-      set number
-      set autoindent
-      set smartindent
-      set tabstop=4
-      set shiftwidth=4
-      set expandtab
-      set hlsearch
-      set incsearch
-      syntax on
-    dest: /etc/vimrc.local
-    mode: '0644'
-
-- name: 配置 Bash 提示符
-  lineinfile:
-    path: /etc/bashrc
-    line: "PS1='[\\u@\\h \\W]\\$ '"
-    state: present
-    create: yes
-    mode: '0644'
-  when: ansible_os_family == 'RedHat'
-
-- name: 配置 Bash 提示符 (Debian/Ubuntu)
-  lineinfile:
-    path: /etc/bash.bashrc
-    line: "PS1='[\\u@\\h \\W]\\$ '"
-    state: present
-    create: yes
-    mode: '0644'
-  when: ansible_os_family == 'Debian'

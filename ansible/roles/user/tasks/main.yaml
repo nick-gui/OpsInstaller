@@ -1,0 +1,27 @@
+---
+- name: 创建用户组
+  group:
+    name: "{{ item.group }}"
+    gid: "{{ item.uid | default(omit) }}"
+    state: present
+  loop: "{{ system_users }}"
+  when: item.group is defined
+
+- name: 创建用户
+  user:
+    name: "{{ item.name }}"
+    uid: "{{ item.uid | default(omit) }}"
+    group: "{{ item.group | default(omit) }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    state: present
+    create_home: yes
+  loop: "{{ system_users }}"
+
+- name: 配置 sudo 权限 (免密)
+  lineinfile:
+    dest: /etc/sudoers
+    line: "{{ item.name }} ALL=(ALL) NOPASSWD: ALL"
+    validate: 'visudo -cf %s'
+    state: present
+  loop: "{{ system_users }}"
+  when: item.sudo | default(false) | bool

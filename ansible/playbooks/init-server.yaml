@@ -6,5 +6,7 @@
 
   roles:
     - role: common
+    - role: user
+    - role: disk
     - role: directory
     - role: sysctl
