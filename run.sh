@@ -160,10 +160,10 @@ select_playbook() {
 select_hosts() {
     log_title "主机选择"
     echo ""
-    echo -e "  ${BLUE}1${NC}. 所有主机 (all)"
-    echo -e "  ${BLUE}2${NC}. 指定主机组"
-    echo -e "  ${BLUE}3${NC}. 指定单台主机"
-    echo -e "  ${BLUE}4${NC}. 输入服务器 IP (临时主机)"
+    echo -e "  ${BLUE}1${NC}. 请输入服务器 IP (多个 IP 用逗号分隔，输入 exit 退出)"
+    echo -e "  ${BLUE}2${NC}. 请输入主机组名称 (输入 exit 退出)"
+    echo -e "  ${BLUE}3${NC}. 请输入主机名称 (输入 exit 退出)"
+    echo -e "  ${BLUE}4${NC}. 所有主机 (all)"
     echo ""
 
     INVENTORY_OPT=""
@@ -171,16 +171,38 @@ select_hosts() {
     TEMP_INVENTORY_FILE=""
 
     while true; do
-        read -p "请选择目标主机范围 (1-4，默认 4，输入 exit 退出): " host_choice
+        local prompt_text="请选择目标主机范围 (1-4，默认 1，输入 exit 退出): "
+        read -p "$prompt_text" host_choice
         if [ "$host_choice" = "exit" ]; then
             log_info "已退出程序"
             exit 0
         fi
-        host_choice=${host_choice:-4}
+        if [ -z "$host_choice" ]; then
+            host_choice=1
+        fi
 
         if [ "$host_choice" = "1" ]; then
-            EXTRA_VARS_OPT="-e webserver=all"
-            break
+            read -p "请输入服务器 IP (多个 IP 用逗号分隔，输入 exit 退出): " host_ips
+            if [ "$host_ips" = "exit" ]; then
+                log_info "已退出程序"
+                exit 0
+            fi
+            if [ -n "$host_ips" ]; then
+                local timestamp=$(date +%s)
+                local group_name="web_${timestamp}"
+                TEMP_INVENTORY_FILE="$ANSIBLE_DIR/inventory/temp_${timestamp}.ini"
+
+                # 创建临时 inventory 文件
+                echo "[${group_name}]" > "$TEMP_INVENTORY_FILE"
+                # 将逗号分隔的 IP 转换为换行
+                echo "$host_ips" | tr ',' '\n' | grep -v '^$' >> "$TEMP_INVENTORY_FILE"
+
+                INVENTORY_OPT="-i $TEMP_INVENTORY_FILE"
+                EXTRA_VARS_OPT="-e webserver=${group_name}"
+                break
+            else
+                log_error "服务器 IP 不能为空"
+            fi
         elif [ "$host_choice" = "2" ]; then
             read -p "请输入主机组名称 (输入 exit 退出): " host_group
             if [ "$host_group" = "exit" ]; then
@@ -206,27 +228,8 @@ select_hosts() {
                 log_error "主机名称不能为空"
             fi
         elif [ "$host_choice" = "4" ]; then
-            read -p "请输入服务器 IP (多个 IP 用逗号分隔，输入 exit 退出): " host_ips
-            if [ "$host_ips" = "exit" ]; then
-                log_info "已退出程序"
-                exit 0
-            fi
-            if [ -n "$host_ips" ]; then
-                local timestamp=$(date +%s)
-                local group_name="web_${timestamp}"
-                TEMP_INVENTORY_FILE="$ANSIBLE_DIR/inventory/temp_${timestamp}.ini"
-
-                # 创建临时 inventory 文件
-                echo "[${group_name}]" > "$TEMP_INVENTORY_FILE"
-                # 将逗号分隔的 IP 转换为换行
-                echo "$host_ips" | tr ',' '\n' | grep -v '^$' >> "$TEMP_INVENTORY_FILE"
-
-                INVENTORY_OPT="-i $TEMP_INVENTORY_FILE"
-                EXTRA_VARS_OPT="-e webserver=${group_name}"
-                break
-            else
-                log_error "服务器 IP 不能为空"
-            fi
+            EXTRA_VARS_OPT="-e webserver=all"
+            break
         else
             log_error "无效的选择，请输入 1 到 4 之间的数字"
         fi
