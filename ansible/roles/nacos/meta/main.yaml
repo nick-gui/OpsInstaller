@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   author: OpsInstaller
-  description: Nacos 部署角色（支持 docker/直装、单机/集群、认证与数据库模式）
+  description: Nacos Docker Compose 部署角色（支持单机/集群、内置或外置 MySQL、认证）
   company: OpsInstaller
   license: MIT
   min_ansible_version: 2.9

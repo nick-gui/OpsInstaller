@@ -1,16 +1,49 @@
+networks:
+  nacos-net:
+    driver: bridge
+
 services:
-  nacos:
-    image: "{{ nacos_image }}:{{ nacos_version }}"
-    container_name: "{{ nacos_container_name }}"
+{% if nacos_db_mode == 'compose' %}
+  mysql:
+    image: "{{ nacos_mysql_image }}"
+    container_name: "{{ nacos_mysql_container_name }}"
     restart: "{{ nacos_docker_restart_policy }}"
     environment:
-      MODE: "{{ nacos_mode }}"
+      MYSQL_ROOT_PASSWORD: "{{ nacos_mysql_root_password }}"
+      MYSQL_DATABASE: "{{ nacos_db.name }}"
+      MYSQL_USER: "{{ nacos_db.user }}"
+      MYSQL_PASSWORD: "{{ nacos_db.password }}"
+    command:
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+      - "--default-time-zone=+8:00"
+    volumes:
+      - "{{ nacos_mysql_data_dir }}:/var/lib/mysql"
+    networks:
+      - nacos-net
+{% endif %}
+{% if nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo' %}
+{# 伪集群：单机多容器，每个节点映射不同宿主机端口 #}
+{% for i in range(nacos_pseudo_nodes) %}
+{% set http_port = nacos_pseudo_port_start + i * nacos_pseudo_port_step %}
+{% set grpc_port = http_port + 1000 %}
+{% set grpc_tls_port = http_port + 1001 %}
+  {{ nacos_container_name }}-{{ i + 1 }}:
+    image: "{{ nacos_image }}:{{ nacos_version }}"
+    container_name: "{{ nacos_container_name }}-{{ i + 1 }}"
+    restart: "{{ nacos_docker_restart_policy }}"
+    hostname: "{{ nacos_container_name }}-{{ i + 1 }}"
+{% if nacos_db_mode == 'compose' %}
+    depends_on:
+      - mysql
+{% endif %}
+    environment:
+      MODE: "cluster"
       PREFER_HOST_MODE: "hostname"
       NACOS_AUTH_ENABLE: "{{ nacos_auth_enabled | lower }}"
       NACOS_AUTH_TOKEN: "{{ nacos_auth_token }}"
       NACOS_AUTH_IDENTITY_KEY: "{{ nacos_auth_identity_key }}"
       NACOS_AUTH_IDENTITY_VALUE: "{{ nacos_auth_identity_value }}"
-{% if nacos_db_mode == 'mysql' %}
       SPRING_DATASOURCE_PLATFORM: "mysql"
       MYSQL_SERVICE_HOST: "{{ nacos_db.host }}"
       MYSQL_SERVICE_PORT: "{{ nacos_db.port }}"
@@ -18,7 +51,42 @@ services:
       MYSQL_SERVICE_USER: "{{ nacos_db.user }}"
       MYSQL_SERVICE_PASSWORD: "{{ nacos_db.password }}"
       MYSQL_DATABASE_NUM: "1"
+    ports:
+      - "{{ http_port }}:8848"
+      - "{{ grpc_port }}:9848"
+      - "{{ grpc_tls_port }}:9849"
+    volumes:
+      - "{{ nacos_conf_dir }}/cluster.conf:/home/nacos/conf/cluster.conf"
+      - "{{ nacos_conf_dir }}/application.properties:/home/nacos/conf/application.properties"
+      - "{{ nacos_logs_dir }}/node{{ i + 1 }}:/home/nacos/logs"
+      - "{{ nacos_data_dir }}/node{{ i + 1 }}:/home/nacos/data"
+    networks:
+      - nacos-net
+{% endfor %}
+{% else %}
+{# 单机模式 或 真实集群（每台机器单独运行一个容器）#}
+  nacos:
+    image: "{{ nacos_image }}:{{ nacos_version }}"
+    container_name: "{{ nacos_container_name }}"
+    restart: "{{ nacos_docker_restart_policy }}"
+{% if nacos_db_mode == 'compose' %}
+    depends_on:
+      - mysql
 {% endif %}
+    environment:
+      MODE: "{{ nacos_mode }}"
+      PREFER_HOST_MODE: "hostname"
+      NACOS_AUTH_ENABLE: "{{ nacos_auth_enabled | lower }}"
+      NACOS_AUTH_TOKEN: "{{ nacos_auth_token }}"
+      NACOS_AUTH_IDENTITY_KEY: "{{ nacos_auth_identity_key }}"
+      NACOS_AUTH_IDENTITY_VALUE: "{{ nacos_auth_identity_value }}"
+      SPRING_DATASOURCE_PLATFORM: "mysql"
+      MYSQL_SERVICE_HOST: "{{ nacos_db.host }}"
+      MYSQL_SERVICE_PORT: "{{ nacos_db.port }}"
+      MYSQL_SERVICE_DB_NAME: "{{ nacos_db.name }}"
+      MYSQL_SERVICE_USER: "{{ nacos_db.user }}"
+      MYSQL_SERVICE_PASSWORD: "{{ nacos_db.password }}"
+      MYSQL_DATABASE_NUM: "1"
     ports:
       - "{{ nacos_http_port }}:8848"
       - "{{ nacos_grpc_port }}:9848"
@@ -31,3 +99,6 @@ services:
 {% endif %}
       - "{{ nacos_logs_dir }}:/home/nacos/logs"
       - "{{ nacos_data_dir }}:/home/nacos/data"
+    networks:
+      - nacos-net
+{% endif %}

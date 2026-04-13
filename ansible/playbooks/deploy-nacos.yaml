@@ -4,5 +4,180 @@
   become: yes
   gather_facts: yes
 
+  vars_prompt:
+    - name: "nacos_mode"
+      prompt: "请选择运行模式（standalone/cluster）"
+      default: "standalone"
+      private: no
+    - name: "nacos_cluster_type"
+      prompt: "集群类型（real=真实多机集群 / pseudo=伪集群单机多容器，standalone 时忽略）"
+      default: "real"
+      private: no
+    - name: "nacos_db_mode"
+      prompt: "请选择数据库模式（compose/external）"
+      default: "compose"
+      private: no
+    - name: "nacos_version"
+      prompt: "请输入 Nacos 版本（默认 latest）"
+      default: "latest"
+      private: no
+    - name: "nacos_auth_enabled"
+      prompt: "是否开启认证（true/false）"
+      default: "true"
+      private: no
+    - name: "nacos_web_login_enabled"
+      prompt: "是否开启 Web 登录认证（true/false）"
+      default: "true"
+      private: no
+    - name: "nacos_auth_token"
+      prompt: "请输入认证 Token（至少 32 位）"
+      default: "please-change-this-token-at-least-32-characters"
+      private: no
+
+  pre_tasks:
+    # ---------- 真实集群：收集节点列表 ----------
+    - name: 提示输入真实集群节点（real 模式）
+      debug:
+        msg:
+          - "你选择了真实集群（real）模式。"
+          - "请依次输入集群节点，格式为 IP:8848，输入空行结束。"
+          - "每台目标机器上将部署一个 Nacos 容器，端口均为 {{ nacos_http_port | default(8848) }}。"
+      when: nacos_mode == 'cluster' and nacos_cluster_type == 'real'
+
+    - name: 读取真实集群节点（最多支持 9 节点，输入空行跳过）
+      pause:
+        prompt: "节点 {{ item }} IP:PORT（如 10.0.0.{{ item }}:8848，直接回车跳过）"
+      register: "real_node_input_{{ item }}"
+      loop: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+      when: nacos_mode == 'cluster' and nacos_cluster_type == 'real'
+
+    - name: 汇总真实集群节点列表
+      set_fact:
+        nacos_cluster_nodes: >-
+          {{
+            [
+              real_node_input_1.user_input | default(''),
+              real_node_input_2.user_input | default(''),
+              real_node_input_3.user_input | default(''),
+              real_node_input_4.user_input | default(''),
+              real_node_input_5.user_input | default(''),
+              real_node_input_6.user_input | default(''),
+              real_node_input_7.user_input | default(''),
+              real_node_input_8.user_input | default(''),
+              real_node_input_9.user_input | default('')
+            ] | select('ne', '') | list
+          }}
+      when: nacos_mode == 'cluster' and nacos_cluster_type == 'real'
+
+    # ---------- 伪集群：收集节点数和起始端口 ----------
+    - name: 提示伪集群配置
+      debug:
+        msg:
+          - "你选择了伪集群（pseudo）模式，将在同一台机器上启动多个 Nacos 容器。"
+          - "各节点将使用不同的宿主机端口（起始端口 + 步长 * 序号），通过 Docker 内网互相发现。"
+          - "例如：起始 8848，步长 10，节点数 3 → 宿主机端口: 8848 / 8858 / 8868。"
+      when: nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo'
+
+    - name: 读取伪集群节点数量
+      pause:
+        prompt: "请输入节点数量（至少 3，默认 3）"
+      register: pseudo_nodes_input
+      when: nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo'
+
+    - name: 读取伪集群起始端口
+      pause:
+        prompt: "请输入节点1 HTTP 起始端口（默认 8848）"
+      register: pseudo_port_input
+      when: nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo'
+
+    - name: 读取伪集群端口步长
+      pause:
+        prompt: "请输入端口步长（默认 10，即节点2=8858，节点3=8868）"
+      register: pseudo_step_input
+      when: nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo'
+
+    - name: 设置伪集群参数
+      set_fact:
+        nacos_pseudo_nodes: "{{ pseudo_nodes_input.user_input | default('3') | int if pseudo_nodes_input.user_input | default('') != '' else 3 }}"
+        nacos_pseudo_port_start: "{{ pseudo_port_input.user_input | default('8848') | int if pseudo_port_input.user_input | default('') != '' else 8848 }}"
+        nacos_pseudo_port_step: "{{ pseudo_step_input.user_input | default('10') | int if pseudo_step_input.user_input | default('') != '' else 10 }}"
+      when: nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo'
+
+    - name: 展示伪集群端口规划
+      debug:
+        msg: >-
+          伪集群端口规划：
+          {% for i in range(nacos_pseudo_nodes | int) %}
+          节点{{ i + 1 }}: HTTP={{ nacos_pseudo_port_start | int + i * nacos_pseudo_port_step | int }},
+          gRPC={{ nacos_pseudo_port_start | int + i * nacos_pseudo_port_step | int + 1000 }},
+          gRPC-TLS={{ nacos_pseudo_port_start | int + i * nacos_pseudo_port_step | int + 1001 }}
+          {% endfor %}
+      when: nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo'
+
+    # ---------- external MySQL：收集连接信息 ----------
+    - name: 提示 external 模式需要 MySQL 连接信息
+      debug:
+        msg:
+          - "你选择了独立 MySQL（external）模式，请输入数据库连接信息。"
+          - "请确保已执行 Nacos 对应版本的 SQL 初始化脚本。"
+      when: nacos_db_mode == "external"
+
+    - name: 读取 external 模式 MySQL 主机
+      pause:
+        prompt: "请输入 MySQL 主机"
+      register: nacos_mysql_host_input
+      when: nacos_db_mode == "external"
+
+    - name: 读取 external 模式 MySQL 端口
+      pause:
+        prompt: "请输入 MySQL 端口（默认 3306）"
+      register: nacos_mysql_port_input
+      when: nacos_db_mode == "external"
+
+    - name: 读取 external 模式 MySQL 数据库名
+      pause:
+        prompt: "请输入 MySQL 数据库名（默认 nacos）"
+      register: nacos_mysql_name_input
+      when: nacos_db_mode == "external"
+
+    - name: 读取 external 模式 MySQL 用户
+      pause:
+        prompt: "请输入 MySQL 用户（默认 nacos）"
+      register: nacos_mysql_user_input
+      when: nacos_db_mode == "external"
+
+    - name: 读取 external 模式 MySQL 密码
+      pause:
+        prompt: "请输入 MySQL 密码"
+        echo: no
+      register: nacos_mysql_password_input
+      when: nacos_db_mode == "external"
+
+    - name: 设置独立 MySQL 配置
+      set_fact:
+        nacos_db:
+          host: "{{ nacos_mysql_host_input.user_input | default('127.0.0.1', true) }}"
+          port: "{{ nacos_mysql_port_input.user_input | default('3306', true) | int }}"
+          name: "{{ nacos_mysql_name_input.user_input | default('nacos', true) }}"
+          user: "{{ nacos_mysql_user_input.user_input | default('nacos', true) }}"
+          password: "{{ nacos_mysql_password_input.user_input }}"
+          params: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false"
+      when: nacos_db_mode == "external"
+
+    - name: 校验独立 MySQL 密码不为空
+      assert:
+        that:
+          - nacos_db.password | length > 0
+        fail_msg: "独立 MySQL 模式下，数据库密码不能为空。"
+      when: nacos_db_mode == "external"
+
+    - name: 提示先初始化 Nacos SQL（external 模式）
+      debug:
+        msg:
+          - "你选择了独立 MySQL 模式，请确认已初始化数据库："
+          - "mysql -h {{ nacos_db.host }} -P {{ nacos_db.port }} -u {{ nacos_db.user }} -p {{ nacos_db.name }} < conf/mysql-schema.sql"
+          - "说明：请使用与你所选 Nacos 版本匹配的 SQL 初始化脚本。"
+      when: nacos_db_mode == "external"
+
   roles:
     - role: nacos

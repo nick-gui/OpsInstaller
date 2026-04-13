@@ -251,9 +251,16 @@ confirm_execution() {
         echo -e "    ${BLUE}- $pb_name${NC} ($pb_desc)"
     done
     if [ -n "$inventory_opt" ]; then
-        local display_ips=${inventory_opt#-i }
-        display_ips=${display_ips%,}
-        echo -e "  主机范围: ${BLUE}临时 IP ($display_ips)${NC}"
+        local inventory_file=${inventory_opt#-i }
+        local display_ips=""
+        if [ -f "$inventory_file" ]; then
+            display_ips=$(awk 'NF && $1 !~ /^\[/ && $1 !~ /^#/{print $1}' "$inventory_file" | paste -sd "," -)
+        fi
+        if [ -n "$display_ips" ]; then
+            echo -e "  主机范围: ${BLUE}临时 IP ($display_ips)${NC}"
+        else
+            echo -e "  主机范围: ${BLUE}临时 inventory ($inventory_file)${NC}"
+        fi
     elif [ -n "$extra_vars_opt" ]; then
         local display_host=${extra_vars_opt#-e webserver=}
         echo -e "  主机范围: ${BLUE}$display_host${NC}"
@@ -396,9 +403,7 @@ main() {
     select_hosts
     show_extra_options
 
-    if confirm_execution "$EXTRA_VARS_OPT" "$INVENTORY_OPT" "${SELECTED_PLAYBOOKS[@]}"; then
-        execute_playbook "$EXTRA_VARS_OPT" "$EXTRA_OPT" "$INVENTORY_OPT" "${SELECTED_PLAYBOOKS[@]}"
-    fi
+    execute_playbook "$EXTRA_VARS_OPT" "$EXTRA_OPT" "$INVENTORY_OPT" "${SELECTED_PLAYBOOKS[@]}"
 }
 
 main "$@"

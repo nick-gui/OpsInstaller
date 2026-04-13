@@ -1,17 +1,11 @@
 ---
-# 部署模式: docker | binary
-nacos_deploy_mode: "docker"
-
-# 运行模式: standalone | cluster
+# 运行模式: standalone | cluster（仅 Docker Compose 部署）
 nacos_mode: "standalone"
 
-# 版本: 默认 latest；binary 模式支持 latest 或指定版本号
+# 版本: 默认 latest
 nacos_version: "latest"
 
-# 安装与目录
-nacos_user: "nacos"
-nacos_group: "nacos"
-nacos_install_dir: "/ROOT/server/nacos"
+# Docker Compose 目录
 nacos_data_dir: "/ROOT/data/nacos/data"
 nacos_logs_dir: "/ROOT/log/nacos"
 nacos_conf_dir: "/ROOT/conf/nacos"
@@ -24,11 +18,20 @@ nacos_grpc_port: 9848
 nacos_grpc_tls_port: 9849
 nacos_raft_port: 7848
 
-# 集群节点（示例: ["10.0.0.1:8848","10.0.0.2:8848"]）
+# 集群类型: real（真实集群，多机部署）| pseudo（伪集群，单机多容器）
+# 仅 nacos_mode=cluster 时生效
+nacos_cluster_type: "real"
+
+# 真实集群节点列表（nacos_cluster_type=real 时必填，格式: ["IP:8848","IP:8848"]）
 nacos_cluster_nodes: []
 
-# 数据库模式: embedded | mysql
-nacos_db_mode: "embedded"
+# 伪集群配置（nacos_cluster_type=pseudo 时生效，单机多容器）
+nacos_pseudo_nodes: 3           # 节点数量
+nacos_pseudo_port_start: 8848   # 节点1 HTTP 起始端口
+nacos_pseudo_port_step: 10      # 端口步长（节点1=8848, 节点2=8858, 节点3=8868）
+
+# 数据库模式: compose | external
+nacos_db_mode: "compose"
 nacos_db:
   host: "127.0.0.1"
   port: 3306
@@ -46,3 +49,9 @@ nacos_web_login_enabled: true
 
 # Docker 资源与重启策略
 nacos_docker_restart_policy: "always"
+
+# Docker Compose 内置 MySQL 配置（nacos_db_mode=compose 时启用）
+nacos_mysql_image: "mysql:8.0"
+nacos_mysql_container_name: "nacos-mysql"
+nacos_mysql_root_password: "root123456"
+nacos_mysql_data_dir: "/ROOT/data/nacos/mysql"
