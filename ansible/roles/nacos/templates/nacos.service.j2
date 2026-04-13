@@ -1,0 +1,16 @@
+[Unit]
+Description=Nacos Server
+After=network.target
+
+[Service]
+Type=forking
+User={{ nacos_user }}
+Group={{ nacos_group }}
+WorkingDirectory={{ nacos_install_dir }}/current
+ExecStart={{ nacos_install_dir }}/current/bin/startup.sh -m {{ nacos_mode }}
+ExecStop={{ nacos_install_dir }}/current/bin/shutdown.sh
+Restart=on-failure
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+---
+- name: 部署 Nacos
+  hosts: "{{ webserver }}"
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - role: nacos

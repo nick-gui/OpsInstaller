@@ -1,0 +1,48 @@
+---
+# 部署模式: docker | binary
+nacos_deploy_mode: "docker"
+
+# 运行模式: standalone | cluster
+nacos_mode: "standalone"
+
+# 版本: 默认 latest；binary 模式支持 latest 或指定版本号
+nacos_version: "latest"
+
+# 安装与目录
+nacos_user: "nacos"
+nacos_group: "nacos"
+nacos_install_dir: "/ROOT/server/nacos"
+nacos_data_dir: "/ROOT/data/nacos/data"
+nacos_logs_dir: "/ROOT/log/nacos"
+nacos_conf_dir: "/ROOT/conf/nacos"
+nacos_container_name: "nacos"
+nacos_image: "nacos/nacos-server"
+
+# 端口
+nacos_http_port: 8848
+nacos_grpc_port: 9848
+nacos_grpc_tls_port: 9849
+nacos_raft_port: 7848
+
+# 集群节点（示例: ["10.0.0.1:8848","10.0.0.2:8848"]）
+nacos_cluster_nodes: []
+
+# 数据库模式: embedded | mysql
+nacos_db_mode: "embedded"
+nacos_db:
+  host: "127.0.0.1"
+  port: 3306
+  name: "nacos"
+  user: "nacos"
+  password: "nacos"
+  params: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false"
+
+# 认证配置
+nacos_auth_enabled: true
+nacos_auth_token: "please-change-this-token-at-least-32-characters"
+nacos_auth_identity_key: "serverIdentity"
+nacos_auth_identity_value: "security"
+nacos_web_login_enabled: true
+
+# Docker 资源与重启策略
+nacos_docker_restart_policy: "always"

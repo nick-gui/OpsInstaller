@@ -1,0 +1,15 @@
+server.port={{ nacos_http_port }}
+
+spring.sql.init.platform=mysql
+db.num={% if nacos_db_mode == 'mysql' %}1{% else %}0{% endif %}
+{% if nacos_db_mode == 'mysql' %}
+db.url.0=jdbc:mysql://{{ nacos_db.host }}:{{ nacos_db.port }}/{{ nacos_db.name }}?{{ nacos_db.params }}
+db.user.0={{ nacos_db.user }}
+db.password.0={{ nacos_db.password }}
+{% endif %}
+
+nacos.core.auth.enabled={{ nacos_auth_enabled | lower }}
+nacos.core.auth.console.enabled={{ nacos_web_login_enabled | lower }}
+nacos.core.auth.server.identity.key={{ nacos_auth_identity_key }}
+nacos.core.auth.server.identity.value={{ nacos_auth_identity_value }}
+nacos.core.auth.plugin.nacos.token.secret.key={{ nacos_auth_token }}

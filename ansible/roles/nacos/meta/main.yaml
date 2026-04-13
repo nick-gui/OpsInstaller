@@ -1,0 +1,28 @@
+---
+galaxy_info:
+  author: OpsInstaller
+  description: Nacos 部署角色（支持 docker/直装、单机/集群、认证与数据库模式）
+  company: OpsInstaller
+  license: MIT
+  min_ansible_version: 2.9
+  platforms:
+    - name: EL
+      versions:
+        - 7
+        - 8
+        - 9
+    - name: Debian
+      versions:
+        - buster
+        - bullseye
+        - bookworm
+    - name: Ubuntu
+      versions:
+        - bionic
+        - focal
+        - jammy
+  galaxy_tags:
+    - nacos
+    - config
+    - registry
+dependencies: []

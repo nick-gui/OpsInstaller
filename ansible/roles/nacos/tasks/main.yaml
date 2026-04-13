@@ -1,0 +1,201 @@
+---
+- name: 校验 Nacos 部署参数
+  assert:
+    that:
+      - nacos_deploy_mode in ['docker', 'binary']
+      - nacos_mode in ['standalone', 'cluster']
+      - nacos_db_mode in ['embedded', 'mysql']
+      - nacos_auth_token | length >= 32
+    fail_msg: "Nacos 参数非法，请检查 deploy_mode/mode/db_mode/auth_token"
+
+- name: 集群模式校验节点列表
+  assert:
+    that:
+      - nacos_cluster_nodes | length > 0
+    fail_msg: "集群模式必须提供 nacos_cluster_nodes"
+  when: nacos_mode == 'cluster'
+
+- name: MySQL 模式校验数据库参数
+  assert:
+    that:
+      - nacos_db.host | length > 0
+      - nacos_db.name | length > 0
+      - nacos_db.user | length > 0
+      - nacos_db.password | length > 0
+    fail_msg: "MySQL 模式下 nacos_db 参数不完整"
+  when: nacos_db_mode == 'mysql'
+
+- name: 创建 Nacos 运行目录
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ nacos_conf_dir }}"
+    - "{{ nacos_data_dir }}"
+    - "{{ nacos_logs_dir }}"
+
+- name: 下发 Nacos application.properties
+  template:
+    src: application.properties.j2
+    dest: "{{ nacos_conf_dir }}/application.properties"
+    mode: "0644"
+
+- name: 下发 Nacos cluster.conf
+  template:
+    src: cluster.conf.j2
+    dest: "{{ nacos_conf_dir }}/cluster.conf"
+    mode: "0644"
+  when: nacos_mode == 'cluster'
+
+- name: 删除单机模式下多余的 cluster.conf
+  file:
+    path: "{{ nacos_conf_dir }}/cluster.conf"
+    state: absent
+  when: nacos_mode == 'standalone'
+
+- name: 检查 Docker 命令
+  command: docker --version
+  changed_when: false
+  when: nacos_deploy_mode == 'docker'
+
+- name: 下发 Docker Compose 文件
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ nacos_conf_dir }}/docker-compose.yml"
+    mode: "0644"
+  when: nacos_deploy_mode == 'docker'
+
+- name: Docker 方式部署 Nacos
+  command: docker compose up -d
+  args:
+    chdir: "{{ nacos_conf_dir }}"
+  when: nacos_deploy_mode == 'docker'
+
+- name: 创建 Nacos 用户组
+  group:
+    name: "{{ nacos_group }}"
+    state: present
+  when: nacos_deploy_mode == 'binary'
+
+- name: 创建 Nacos 用户
+  user:
+    name: "{{ nacos_user }}"
+    group: "{{ nacos_group }}"
+    shell: /sbin/nologin
+    create_home: no
+    system: yes
+    state: present
+  when: nacos_deploy_mode == 'binary'
+
+- name: 安装直装依赖 (RedHat/CentOS)
+  yum:
+    name:
+      - java-11-openjdk
+      - unzip
+      - curl
+    state: present
+  when:
+    - nacos_deploy_mode == 'binary'
+    - ansible_os_family == 'RedHat'
+
+- name: 安装直装依赖 (Debian/Ubuntu)
+  apt:
+    name:
+      - openjdk-11-jre-headless
+      - unzip
+      - curl
+    state: present
+    update_cache: yes
+  when:
+    - nacos_deploy_mode == 'binary'
+    - ansible_os_family == 'Debian'
+
+- name: 创建 Nacos 安装目录
+  file:
+    path: "{{ nacos_install_dir }}/releases/{{ nacos_version }}"
+    state: directory
+    mode: "0755"
+  when: nacos_deploy_mode == 'binary'
+
+- name: 生成 Nacos 下载地址
+  set_fact:
+    nacos_download_url: >-
+      {{ 'https://github.com/alibaba/nacos/releases/latest/download/nacos-server.zip'
+         if nacos_version == 'latest'
+         else 'https://github.com/alibaba/nacos/releases/download/' ~ nacos_version ~ '/nacos-server-' ~ nacos_version ~ '.zip' }}
+  when: nacos_deploy_mode == 'binary'
+
+- name: 下载 Nacos 压缩包
+  get_url:
+    url: "{{ nacos_download_url }}"
+    dest: "/tmp/nacos-server-{{ nacos_version }}.zip"
+    mode: "0644"
+  when: nacos_deploy_mode == 'binary'
+
+- name: 解压 Nacos 压缩包
+  unarchive:
+    src: "/tmp/nacos-server-{{ nacos_version }}.zip"
+    dest: "{{ nacos_install_dir }}/releases/{{ nacos_version }}"
+    remote_src: yes
+  when: nacos_deploy_mode == 'binary'
+
+- name: 链接 current 到当前版本
+  file:
+    src: "{{ nacos_install_dir }}/releases/{{ nacos_version }}/nacos"
+    dest: "{{ nacos_install_dir }}/current"
+    state: link
+    force: yes
+  when: nacos_deploy_mode == 'binary'
+
+- name: 覆盖直装模式 application.properties
+  template:
+    src: application.properties.j2
+    dest: "{{ nacos_install_dir }}/current/conf/application.properties"
+    mode: "0644"
+  when: nacos_deploy_mode == 'binary'
+
+- name: 覆盖直装模式 cluster.conf
+  template:
+    src: cluster.conf.j2
+    dest: "{{ nacos_install_dir }}/current/conf/cluster.conf"
+    mode: "0644"
+  when:
+    - nacos_deploy_mode == 'binary'
+    - nacos_mode == 'cluster'
+
+- name: 删除直装单机模式下 cluster.conf
+  file:
+    path: "{{ nacos_install_dir }}/current/conf/cluster.conf"
+    state: absent
+  when:
+    - nacos_deploy_mode == 'binary'
+    - nacos_mode == 'standalone'
+
+- name: 下发 Nacos systemd 服务
+  template:
+    src: nacos.service.j2
+    dest: /etc/systemd/system/nacos.service
+    mode: "0644"
+  when: nacos_deploy_mode == 'binary'
+
+- name: 修正 Nacos 目录权限
+  file:
+    path: "{{ item }}"
+    owner: "{{ nacos_user }}"
+    group: "{{ nacos_group }}"
+    recurse: yes
+  loop:
+    - "{{ nacos_install_dir }}"
+    - "{{ nacos_conf_dir }}"
+    - "{{ nacos_data_dir }}"
+    - "{{ nacos_logs_dir }}"
+  when: nacos_deploy_mode == 'binary'
+
+- name: 启动并启用 Nacos 服务
+  systemd:
+    name: nacos
+    daemon_reload: yes
+    state: started
+    enabled: yes
+  when: nacos_deploy_mode == 'binary'

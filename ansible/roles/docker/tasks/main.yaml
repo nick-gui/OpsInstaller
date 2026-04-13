@@ -55,6 +55,8 @@
         mode: "0644"
     - name: 清理 YUM 缓存 (RedHat/CentOS)
       command: yum clean all
+      args:
+        warn: false
       changed_when: false
   rescue:
     - name: 添加 Docker YUM 仓库回退源 (RedHat/CentOS)
@@ -64,6 +66,8 @@
         mode: "0644"
     - name: 清理 YUM 缓存回退 (RedHat/CentOS)
       command: yum clean all
+      args:
+        warn: false
       changed_when: false
   when: ansible_os_family == 'RedHat'
 
