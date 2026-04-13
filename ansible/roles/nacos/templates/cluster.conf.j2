@@ -1,6 +1,6 @@
 {% if nacos_cluster_type == 'pseudo' %}
 {# 伪集群：通过 Docker 内网容器名互相发现，内部端口均为 8848 #}
-{% for i in range(nacos_pseudo_nodes) %}
+{% for i in range(nacos_pseudo_nodes | int) %}
 {{ nacos_container_name }}-{{ i + 1 }}:8848
 {% endfor %}
 {% else %}

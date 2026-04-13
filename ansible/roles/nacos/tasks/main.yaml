@@ -57,6 +57,35 @@
   loop:
     - "{{ nacos_conf_dir }}"
     - "{{ nacos_mysql_data_dir }}"
+    - "{{ nacos_mysql_init_dir }}"
+
+- name: 从 GitHub 下载 Nacos SQL 初始化文件
+  block:
+    - name: 下载 mysql-schema.sql（主地址）
+      get_url:
+        url: "{{ nacos_sql_url_primary }}"
+        dest: "{{ nacos_mysql_init_dir }}/mysql-schema.sql"
+        mode: "0644"
+        timeout: 30
+  rescue:
+    - name: 下载 mysql-schema.sql（备用地址）
+      get_url:
+        url: "{{ nacos_sql_url_fallback }}"
+        dest: "{{ nacos_mysql_init_dir }}/mysql-schema.sql"
+        mode: "0644"
+        timeout: 30
+
+- name: 确认 SQL 文件下载成功
+  stat:
+    path: "{{ nacos_mysql_init_dir }}/mysql-schema.sql"
+  register: sql_file_stat
+
+- name: 校验 SQL 文件存在
+  assert:
+    that:
+      - sql_file_stat.stat.exists
+      - sql_file_stat.stat.size > 0
+    fail_msg: "mysql-schema.sql 下载失败，请检查网络或手动下载"
 
 - name: 创建伪集群各节点 data/logs 目录
   file:

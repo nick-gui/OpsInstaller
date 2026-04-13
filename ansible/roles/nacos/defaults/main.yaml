@@ -55,3 +55,9 @@ nacos_mysql_image: "mysql:8.0"
 nacos_mysql_container_name: "nacos-mysql"
 nacos_mysql_root_password: "root123456"
 nacos_mysql_data_dir: "/ROOT/data/nacos/mysql"
+nacos_mysql_init_dir: "/ROOT/conf/nacos/mysql-init"
+
+# Nacos SQL 初始化文件下载（从 GitHub 获取对应版本）
+# latest 使用 master 分支，指定版本使用对应 tag
+nacos_sql_url_primary: "https://raw.githubusercontent.com/alibaba/nacos/{{ 'master' if nacos_version == 'latest' else nacos_version }}/distribution/conf/mysql-schema.sql"
+nacos_sql_url_fallback: "https://ghproxy.com/https://raw.githubusercontent.com/alibaba/nacos/{{ 'master' if nacos_version == 'latest' else nacos_version }}/distribution/conf/mysql-schema.sql"

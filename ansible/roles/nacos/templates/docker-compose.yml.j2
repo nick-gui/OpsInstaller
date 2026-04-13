@@ -19,13 +19,20 @@ services:
       - "--default-time-zone=+8:00"
     volumes:
       - "{{ nacos_mysql_data_dir }}:/var/lib/mysql"
+      - "{{ nacos_mysql_init_dir }}:/docker-entrypoint-initdb.d:ro"
     networks:
       - nacos-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 {% endif %}
 {% if nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo' %}
 {# 伪集群：单机多容器，每个节点映射不同宿主机端口 #}
-{% for i in range(nacos_pseudo_nodes) %}
-{% set http_port = nacos_pseudo_port_start + i * nacos_pseudo_port_step %}
+{% for i in range(nacos_pseudo_nodes | int) %}
+{% set http_port = nacos_pseudo_port_start | int + i * (nacos_pseudo_port_step | int) %}
 {% set grpc_port = http_port + 1000 %}
 {% set grpc_tls_port = http_port + 1001 %}
   {{ nacos_container_name }}-{{ i + 1 }}:
@@ -35,7 +42,8 @@ services:
     hostname: "{{ nacos_container_name }}-{{ i + 1 }}"
 {% if nacos_db_mode == 'compose' %}
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 {% endif %}
     environment:
       MODE: "cluster"
@@ -71,7 +79,8 @@ services:
     restart: "{{ nacos_docker_restart_policy }}"
 {% if nacos_db_mode == 'compose' %}
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 {% endif %}
     environment:
       MODE: "{{ nacos_mode }}"
