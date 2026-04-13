@@ -1,8 +1,0 @@
----
-- name: 安装 Docker (基础优化)
-  hosts: "{{ webserver }}"
-  become: yes
-  gather_facts: yes
-
-  roles:
-    - role: docker

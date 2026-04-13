@@ -34,15 +34,37 @@
   when: ansible_os_family == 'RedHat'
 
 - name: 添加 Docker GPG 密钥 (RedHat/CentOS)
-  rpm_key:
-    key: https://download.docker.com/linux/centos/gpg
-    state: present
+  block:
+    - name: 添加 Docker GPG 密钥主源 (RedHat/CentOS)
+      rpm_key:
+        key: "{{ docker_gpg_key_url_redhat_primary }}"
+        state: present
+  rescue:
+    - name: 添加 Docker GPG 密钥回退源 (RedHat/CentOS)
+      rpm_key:
+        key: "{{ docker_gpg_key_url_redhat_fallback }}"
+        state: present
   when: ansible_os_family == 'RedHat'
 
 - name: 添加 Docker YUM 仓库 (RedHat/CentOS)
-  get_url:
-    url: "https://download.docker.com/linux/centos/docker-ce.repo"
-    dest: /etc/yum.repos.d/docker-ce.repo
+  block:
+    - name: 添加 Docker YUM 仓库主源 (RedHat/CentOS)
+      get_url:
+        url: "{{ docker_repo_url_redhat_primary }}"
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: "0644"
+    - name: 清理 YUM 缓存 (RedHat/CentOS)
+      command: yum clean all
+      changed_when: false
+  rescue:
+    - name: 添加 Docker YUM 仓库回退源 (RedHat/CentOS)
+      get_url:
+        url: "{{ docker_repo_url_redhat_fallback }}"
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: "0644"
+    - name: 清理 YUM 缓存回退 (RedHat/CentOS)
+      command: yum clean all
+      changed_when: false
   when: ansible_os_family == 'RedHat'
 
 - name: 添加 Docker GPG 密钥 (Debian/Ubuntu)
