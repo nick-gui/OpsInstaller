@@ -1,0 +1,14 @@
+---
+- name: 更新系统软件包 (RedHat/CentOS)
+  yum:
+    name: "*"
+    state: latest
+    update_cache: yes
+  when: ansible_os_family == 'RedHat'
+
+- name: 更新系统软件包 (Debian/Ubuntu)
+  apt:
+    upgrade: dist
+    update_cache: yes
+    autoremove: yes
+  when: ansible_os_family == 'Debian'

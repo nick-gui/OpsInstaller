@@ -160,10 +160,10 @@ select_playbook() {
 select_hosts() {
     log_title "主机选择"
     echo ""
-    echo -e "  ${BLUE}1${NC}. 请输入服务器 IP (多个 IP 用逗号分隔，输入 exit 退出)"
-    echo -e "  ${BLUE}2${NC}. 请输入主机组名称 (输入 exit 退出)"
-    echo -e "  ${BLUE}3${NC}. 请输入主机名称 (输入 exit 退出)"
-    echo -e "  ${BLUE}4${NC}. 所有主机 (all)"
+    echo -e "  ${BLUE}1${NC}. 请输入服务器 IP"
+    echo -e "  ${BLUE}2${NC}. 请输入主机组名称"
+    echo -e "  ${BLUE}3${NC}. 请输入主机名称"
+    echo -e "  ${BLUE}4${NC}. 所有主机"
     echo ""
 
     INVENTORY_OPT=""

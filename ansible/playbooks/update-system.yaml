@@ -1,0 +1,8 @@
+---
+- name: 更新系统
+  hosts: "{{ webserver }}"
+  become: yes
+  gather_facts: yes
+
+  roles:
+    - role: system_update
