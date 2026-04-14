@@ -122,6 +122,7 @@ services:
     container_name: "{{ nacos_container_name }}-console"
     restart: "{{ nacos_docker_restart_policy }}"
     environment:
+      MODE: "standalone"
       NACOS_DEPLOYMENT_TYPE: "console"
       NACOS_AUTH_ENABLE: "{{ nacos_auth_enabled | lower }}"
       NACOS_AUTH_ADMIN_ENABLE: "{{ nacos_web_login_enabled | lower }}"
@@ -132,7 +133,7 @@ services:
     ports:
       - "{{ nacos_console_port }}:8080"
     volumes:
-      - "./cluster.conf:/home/nacos/conf/cluster.conf:ro"
+      - "./cluster.conf:/home/nacos/conf/cluster.conf"
       - "./logs/console:/home/nacos/logs"
     networks:
       - nacos-net
