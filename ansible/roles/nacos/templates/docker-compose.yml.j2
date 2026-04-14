@@ -132,7 +132,7 @@ services:
     ports:
       - "{{ nacos_console_port }}:8080"
     volumes:
-      - "./cluster.conf:/home/nacos/conf/cluster.conf"
+      - "./cluster.conf:/home/nacos/conf/cluster.conf:ro"
       - "./logs/console:/home/nacos/logs"
     networks:
       - nacos-net
