@@ -1,3 +1,7 @@
 ---
 # disk role 默认变量
-disk_mounts: []
+disk_mounts:
+  - device: "/dev/vdb"
+    mount_path: "/ROOT"
+    fstype: "ext4"
+    mode: "0755"
