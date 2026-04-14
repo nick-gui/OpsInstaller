@@ -109,6 +109,7 @@
           伪集群端口规划：
           {% for i in range(nacos_pseudo_nodes | int) %}
           节点{{ i + 1 }}: HTTP={{ nacos_pseudo_port_start | int + i * nacos_pseudo_port_step | int }},
+          Console={{ nacos_console_port | default(8080) | int + i * nacos_pseudo_port_step | int }},
           gRPC={{ nacos_pseudo_port_start | int + i * nacos_pseudo_port_step | int + 1000 }},
           gRPC-TLS={{ nacos_pseudo_port_start | int + i * nacos_pseudo_port_step | int + 1001 }}
           {% endfor %}
@@ -175,9 +176,9 @@
       debug:
         msg:
           - "你选择了独立 MySQL 模式。"
-          - "SQL 文件将自动下载到目标机器: /ROOT/conf/nacos/mysql-init/mysql-schema.sql"
+          - "SQL 文件将自动下载到目标机器: {{ nacos_mysql_init_dir | default('/ROOT/data/nacos/mysql-init') }}/mysql-schema.sql"
           - "请确保数据库已导入该 SQL："
-          - "  mysql -h {{ nacos_db.host }} -P {{ nacos_db.port }} -u {{ nacos_db.user }} -p {{ nacos_db.name }} < /ROOT/conf/nacos/mysql-init/mysql-schema.sql"
+          - "  mysql -h {{ nacos_db.host }} -P {{ nacos_db.port }} -u {{ nacos_db.user }} -p {{ nacos_db.name }} < {{ nacos_mysql_init_dir | default('/ROOT/data/nacos/mysql-init') }}/mysql-schema.sql"
           - "注意：部署任务会先下载 SQL，再启动 Nacos；但 external 模式下不会自动导入，需手动执行。"
       when: nacos_db_mode == "external"
 
