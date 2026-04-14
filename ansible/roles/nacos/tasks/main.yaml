@@ -60,6 +60,7 @@
     - "{{ nacos_mysql_init_dir }}"
 
 - name: 从 GitHub 下载 Nacos SQL 初始化文件
+  environment: "{{ proxy_env | default({}) }}"
   block:
     - name: 下载 mysql-schema.sql（主地址）
       get_url:

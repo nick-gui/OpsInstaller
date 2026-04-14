@@ -1,6 +1,15 @@
 ---
 # 全局变量配置
 
+# HTTP 代理（自动从 .env 环境变量读取，未设置则为空字典，不生效）
+proxy_env: >-
+  {{
+    {}
+    | combine({'http_proxy': lookup('env', 'HTTP_PROXY')} if lookup('env', 'HTTP_PROXY') else {})
+    | combine({'https_proxy': lookup('env', 'HTTPS_PROXY')} if lookup('env', 'HTTPS_PROXY') else {})
+    | combine({'no_proxy': lookup('env', 'NO_PROXY')} if lookup('env', 'NO_PROXY') else {})
+  }}
+
 # 系统配置
 system_timezone: "Asia/Shanghai"
 system_locale: "en_US.UTF-8"
