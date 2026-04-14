@@ -126,25 +126,11 @@
     mode: "0755"
   when: nacos_deploy_console | default(true) | bool
 
-- name: 生成 Console 连接 Server 的节点列表
-  set_fact:
-    _nacos_console_servers: >-
-      {%- if nacos_mode == 'standalone' -%}
-      {{ nacos_container_name }}:8848
-      {%- elif nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo' -%}
-      {%- for i in range(nacos_pseudo_nodes | int) -%}
-      {{ nacos_container_name }}-{{ i + 1 }}:8848{{ '\n' if not loop.last else '' }}
-      {%- endfor -%}
-      {%- elif nacos_mode == 'cluster' and nacos_cluster_type == 'real' -%}
-      {{ nacos_cluster_nodes | join('\n') }}
-      {%- endif -%}
-  when: nacos_deploy_console | default(true) | bool
-
 - name: 生成 Console 所需的 cluster.conf
-  copy:
+  template:
+    src: console-cluster.conf.j2
     dest: "{{ nacos_base_dir }}/cluster.conf"
     mode: "0644"
-    content: "{{ _nacos_console_servers }}\n"
   when: nacos_deploy_console | default(true) | bool
 
 - name: 检查 Docker 命令

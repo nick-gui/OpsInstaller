@@ -1,0 +1,11 @@
+{% if nacos_mode == 'standalone' -%}
+{{ nacos_container_name }}:8848
+{% elif nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo' -%}
+{% for i in range(nacos_pseudo_nodes | int) -%}
+{{ nacos_container_name }}-{{ i + 1 }}:8848
+{% endfor -%}
+{% elif nacos_mode == 'cluster' and nacos_cluster_type == 'real' -%}
+{% for node in nacos_cluster_nodes -%}
+{{ node }}
+{% endfor -%}
+{% endif -%}
