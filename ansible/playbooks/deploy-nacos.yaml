@@ -108,11 +108,11 @@
         msg: >-
           伪集群端口规划：
           {% for i in range(nacos_pseudo_nodes | int) %}
-          节点{{ i + 1 }}: HTTP={{ nacos_pseudo_port_start | int + i * nacos_pseudo_port_step | int }},
-          Console={{ nacos_console_port | default(8080) | int + i * nacos_pseudo_port_step | int }},
+          Server{{ i + 1 }}: HTTP={{ nacos_pseudo_port_start | int + i * nacos_pseudo_port_step | int }},
           gRPC={{ nacos_pseudo_port_start | int + i * nacos_pseudo_port_step | int + 1000 }},
           gRPC-TLS={{ nacos_pseudo_port_start | int + i * nacos_pseudo_port_step | int + 1001 }}
           {% endfor %}
+          | Console（独立容器）: {{ nacos_console_port | default(8080) }}
       when: nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo'
 
     # ---------- external MySQL：收集连接信息 ----------

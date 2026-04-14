@@ -12,12 +12,16 @@ nacos_logs_dir: "{{ nacos_base_dir }}/logs"
 nacos_container_name: "nacos"
 nacos_image: "nacos/nacos-server"
 
-# 端口（3.x 控制台独立端口，不再与 8848 耦合）
+# 端口
 nacos_http_port: 8848
-nacos_console_port: 8080
 nacos_grpc_port: 9848
 nacos_grpc_tls_port: 9849
 nacos_raft_port: 7848
+
+# Console 独立部署（3.x 控制台与 Server 分离）
+# 设为 true 时在当前节点部署 Console 容器；真实集群中仅需在一台机器上开启
+nacos_deploy_console: true
+nacos_console_port: 8080
 
 # 集群类型: real（真实集群，多机部署）| pseudo（伪集群，单机多容器）
 # 仅 nacos_mode=cluster 时生效
@@ -60,6 +64,6 @@ nacos_mysql_init_dir: "{{ nacos_base_dir }}/mysql-init"
 
 # Nacos SQL 初始化文件下载（从 GitHub 获取对应版本）
 # latest 使用 master 分支，指定版本使用对应 tag
-# 源地址: https://github.com/alibaba/nacos/blob/master/distribution/conf/mysql-schema.sql
-nacos_sql_url_primary: "https://raw.githubusercontent.com/alibaba/nacos/{{ 'master' if nacos_version == 'latest' else nacos_version }}/distribution/conf/mysql-schema.sql"
-nacos_sql_url_fallback: "https://mirror.ghproxy.com/https://raw.githubusercontent.com/alibaba/nacos/{{ 'master' if nacos_version == 'latest' else nacos_version }}/distribution/conf/mysql-schema.sql"
+# 源地址: https://github.com/alibaba/nacos/blob/master/plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/resources/META-INF/mysql-schema.sql
+nacos_sql_url_primary: "https://raw.githubusercontent.com/alibaba/nacos/{{ 'master' if nacos_version == 'latest' else nacos_version }}/plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/resources/META-INF/mysql-schema.sql"
+nacos_sql_url_fallback: "https://mirror.ghproxy.com/https://raw.githubusercontent.com/alibaba/nacos/{{ 'master' if nacos_version == 'latest' else nacos_version }}/plugin-default-impl/nacos-default-datasource-plugin/nacos-datasource-plugin-mysql/src/main/resources/META-INF/mysql-schema.sql"

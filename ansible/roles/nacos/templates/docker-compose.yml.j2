@@ -30,7 +30,7 @@ services:
       start_period: 30s
 {% endif %}
 {% if nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo' %}
-{# 伪集群：单机多容器，每个节点映射不同宿主机端口 #}
+{# ========== 伪集群：单机多容器 Server ========== #}
 {% for i in range(nacos_pseudo_nodes | int) %}
 {% set http_port = nacos_pseudo_port_start | int + i * (nacos_pseudo_port_step | int) %}
 {% set grpc_port = http_port + 1000 %}
@@ -47,14 +47,11 @@ services:
 {% endif %}
     environment:
       MODE: "cluster"
-      NACOS_DEPLOYMENT_TYPE: "merged"
+      NACOS_DEPLOYMENT_TYPE: "server"
       NACOS_APPLICATION_PORT: "8848"
-      NACOS_CONSOLE_PORT: "8080"
       PREFER_HOST_MODE: "hostname"
       NACOS_SERVERS: "{{ _nacos_pseudo_servers }}"
       NACOS_AUTH_ENABLE: "{{ nacos_auth_enabled | lower }}"
-      NACOS_AUTH_ADMIN_ENABLE: "{{ nacos_web_login_enabled | lower }}"
-      NACOS_AUTH_CONSOLE_ENABLE: "{{ nacos_web_login_enabled | lower }}"
       NACOS_AUTH_TOKEN: "{{ nacos_auth_token }}"
       NACOS_AUTH_IDENTITY_KEY: "{{ nacos_auth_identity_key }}"
       NACOS_AUTH_IDENTITY_VALUE: "{{ nacos_auth_identity_value }}"
@@ -68,7 +65,6 @@ services:
       MYSQL_DATABASE_NUM: "1"
     ports:
       - "{{ http_port }}:8848"
-      - "{{ nacos_console_port | int + i * (nacos_pseudo_port_step | int) }}:8080"
       - "{{ grpc_port }}:9848"
       - "{{ grpc_tls_port }}:9849"
     volumes:
@@ -78,8 +74,8 @@ services:
       - nacos-net
 {% endfor %}
 {% else %}
-{# 单机模式 或 真实集群（每台机器单独运行一个容器）#}
-  nacos:
+{# ========== 单机 / 真实集群 Server ========== #}
+  {{ nacos_container_name }}:
     image: "{{ nacos_image }}:{{ nacos_version }}"
     container_name: "{{ nacos_container_name }}"
     restart: "{{ nacos_docker_restart_policy }}"
@@ -90,16 +86,13 @@ services:
 {% endif %}
     environment:
       MODE: "{{ nacos_mode }}"
-      NACOS_DEPLOYMENT_TYPE: "merged"
+      NACOS_DEPLOYMENT_TYPE: "server"
       NACOS_APPLICATION_PORT: "8848"
-      NACOS_CONSOLE_PORT: "8080"
       PREFER_HOST_MODE: "hostname"
 {% if nacos_mode == 'cluster' %}
       NACOS_SERVERS: "{{ nacos_cluster_nodes | join(' ') }}"
 {% endif %}
       NACOS_AUTH_ENABLE: "{{ nacos_auth_enabled | lower }}"
-      NACOS_AUTH_ADMIN_ENABLE: "{{ nacos_web_login_enabled | lower }}"
-      NACOS_AUTH_CONSOLE_ENABLE: "{{ nacos_web_login_enabled | lower }}"
       NACOS_AUTH_TOKEN: "{{ nacos_auth_token }}"
       NACOS_AUTH_IDENTITY_KEY: "{{ nacos_auth_identity_key }}"
       NACOS_AUTH_IDENTITY_VALUE: "{{ nacos_auth_identity_value }}"
@@ -113,13 +106,34 @@ services:
       MYSQL_DATABASE_NUM: "1"
     ports:
       - "{{ nacos_http_port }}:8848"
-      - "{{ nacos_console_port }}:8080"
       - "{{ nacos_grpc_port }}:9848"
       - "{{ nacos_grpc_tls_port }}:9849"
       - "{{ nacos_raft_port }}:7848"
     volumes:
       - "./logs:/home/nacos/logs"
       - "./data:/home/nacos/data"
+    networks:
+      - nacos-net
+{% endif %}
+{% if nacos_deploy_console | default(true) | bool %}
+{# ========== Console 独立容器 ========== #}
+  {{ nacos_container_name }}-console:
+    image: "{{ nacos_image }}:{{ nacos_version }}"
+    container_name: "{{ nacos_container_name }}-console"
+    restart: "{{ nacos_docker_restart_policy }}"
+    environment:
+      NACOS_DEPLOYMENT_TYPE: "console"
+      NACOS_AUTH_ENABLE: "{{ nacos_auth_enabled | lower }}"
+      NACOS_AUTH_ADMIN_ENABLE: "{{ nacos_web_login_enabled | lower }}"
+      NACOS_AUTH_CONSOLE_ENABLE: "{{ nacos_web_login_enabled | lower }}"
+      NACOS_AUTH_TOKEN: "{{ nacos_auth_token }}"
+      NACOS_AUTH_IDENTITY_KEY: "{{ nacos_auth_identity_key }}"
+      NACOS_AUTH_IDENTITY_VALUE: "{{ nacos_auth_identity_value }}"
+    ports:
+      - "{{ nacos_console_port }}:8080"
+    volumes:
+      - "./cluster.conf:/home/nacos/conf/cluster.conf"
+      - "./logs/console:/home/nacos/logs"
     networks:
       - nacos-net
 {% endif %}
