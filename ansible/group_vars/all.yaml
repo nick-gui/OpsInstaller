@@ -28,43 +28,7 @@ system_users:
     sudo: false
 
 # 目录结构
-base_directories:
-  - path: "/ROOT"
-    owner: "root"
-    group: "root"
-    mode: "0755"
-  - path: "/ROOT/BACKUP"
-    owner: "root"
-    group: "root"
-    mode: "0755"
-  - path: "/ROOT/bin"
-    owner: "root"
-    group: "root"
-    mode: "0755"
-  - path: "/ROOT/conf"
-    owner: "root"
-    group: "root"
-    mode: "0755"
-  - path: "/ROOT/data"
-    owner: "root"
-    group: "root"
-    mode: "0755"
-  - path: "/ROOT/sh"
-    owner: "root"
-    group: "root"
-    mode: "0755"
-  - path: "/ROOT/log"
-    owner: "www"
-    group: "www"
-    mode: "0755"
-  - path: "/ROOT/server"
-    owner: "www"
-    group: "www"
-    mode: "0755"
-  - path: "/ROOT/www"
-    owner: "www"
-    group: "www"
-    mode: "0755"
+
 
 # 磁盘挂载配置
 # 示例配置，根据实际设备路径修改
