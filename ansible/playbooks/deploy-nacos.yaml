@@ -162,7 +162,7 @@
           name: "{{ nacos_mysql_name_input.user_input | default('nacos', true) }}"
           user: "{{ nacos_mysql_user_input.user_input | default('nacos', true) }}"
           password: "{{ nacos_mysql_password_input.user_input }}"
-          params: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false"
+          params: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true"
       when: nacos_db_mode == "external"
 
     - name: 校验独立 MySQL 密码不为空

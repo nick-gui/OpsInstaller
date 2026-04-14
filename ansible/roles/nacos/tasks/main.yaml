@@ -49,18 +49,29 @@
       params: "{{ nacos_db.params }}"
   when: nacos_db_mode == 'compose'
 
-- name: 创建 Nacos 公共目录
+- name: 生成伪集群 NACOS_SERVERS 列表
+  set_fact:
+    _nacos_pseudo_servers: >-
+      {%- set nodes = [] -%}
+      {%- for i in range(nacos_pseudo_nodes | int) -%}
+        {%- set _ = nodes.append(nacos_container_name ~ '-' ~ (i + 1) ~ ':8848') -%}
+      {%- endfor -%}
+      {{ nodes | join(' ') }}
+  when: nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo'
+
+- name: 创建 Nacos 目录
   file:
     path: "{{ item }}"
     state: directory
     mode: "0755"
   loop:
-    - "{{ nacos_conf_dir }}"
     - "{{ nacos_mysql_data_dir }}"
     - "{{ nacos_mysql_init_dir }}"
+  when: nacos_db_mode == 'compose'
 
 - name: 从 GitHub 下载 Nacos SQL 初始化文件
   environment: "{{ proxy_env | default({}) }}"
+  when: nacos_db_mode == 'compose'
   block:
     - name: 下载 mysql-schema.sql（主地址）
       get_url:
@@ -80,6 +91,7 @@
   stat:
     path: "{{ nacos_mysql_init_dir }}/mysql-schema.sql"
   register: sql_file_stat
+  when: nacos_db_mode == 'compose'
 
 - name: 校验 SQL 文件存在
   assert:
@@ -87,6 +99,7 @@
       - sql_file_stat.stat.exists
       - sql_file_stat.stat.size > 0
     fail_msg: "mysql-schema.sql 下载失败，请检查网络或手动下载"
+  when: nacos_db_mode == 'compose'
 
 - name: 创建伪集群各节点 data/logs 目录
   file:
@@ -105,25 +118,6 @@
     - "{{ nacos_data_dir }}"
     - "{{ nacos_logs_dir }}"
   when: not (nacos_mode == 'cluster' and nacos_cluster_type == 'pseudo')
-
-- name: 下发 Nacos application.properties
-  template:
-    src: application.properties.j2
-    dest: "{{ nacos_conf_dir }}/application.properties"
-    mode: "0644"
-
-- name: 下发 Nacos cluster.conf
-  template:
-    src: cluster.conf.j2
-    dest: "{{ nacos_conf_dir }}/cluster.conf"
-    mode: "0644"
-  when: nacos_mode == 'cluster'
-
-- name: 删除单机模式下多余的 cluster.conf
-  file:
-    path: "{{ nacos_conf_dir }}/cluster.conf"
-    state: absent
-  when: nacos_mode == 'standalone'
 
 - name: 检查 Docker 命令
   command: docker --version

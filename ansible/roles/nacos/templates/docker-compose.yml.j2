@@ -47,7 +47,11 @@ services:
 {% endif %}
     environment:
       MODE: "cluster"
+      NACOS_DEPLOYMENT_TYPE: "merged"
+      NACOS_APPLICATION_PORT: "8848"
+      NACOS_CONSOLE_PORT: "8080"
       PREFER_HOST_MODE: "hostname"
+      NACOS_SERVERS: "{{ _nacos_pseudo_servers }}"
       NACOS_AUTH_ENABLE: "{{ nacos_auth_enabled | lower }}"
       NACOS_AUTH_ADMIN_ENABLE: "{{ nacos_web_login_enabled | lower }}"
       NACOS_AUTH_CONSOLE_ENABLE: "{{ nacos_web_login_enabled | lower }}"
@@ -60,6 +64,7 @@ services:
       MYSQL_SERVICE_DB_NAME: "{{ nacos_db.name }}"
       MYSQL_SERVICE_USER: "{{ nacos_db.user }}"
       MYSQL_SERVICE_PASSWORD: "{{ nacos_db.password }}"
+      MYSQL_SERVICE_DB_PARAM: "{{ nacos_db.params }}"
       MYSQL_DATABASE_NUM: "1"
     ports:
       - "{{ http_port }}:8848"
@@ -67,8 +72,6 @@ services:
       - "{{ grpc_port }}:9848"
       - "{{ grpc_tls_port }}:9849"
     volumes:
-      - "./conf/cluster.conf:/home/nacos/conf/cluster.conf"
-      - "./conf/application.properties:/home/nacos/conf/application.properties"
       - "./logs/node{{ i + 1 }}:/home/nacos/logs"
       - "./data/node{{ i + 1 }}:/home/nacos/data"
     networks:
@@ -87,7 +90,13 @@ services:
 {% endif %}
     environment:
       MODE: "{{ nacos_mode }}"
+      NACOS_DEPLOYMENT_TYPE: "merged"
+      NACOS_APPLICATION_PORT: "8848"
+      NACOS_CONSOLE_PORT: "8080"
       PREFER_HOST_MODE: "hostname"
+{% if nacos_mode == 'cluster' %}
+      NACOS_SERVERS: "{{ nacos_cluster_nodes | join(' ') }}"
+{% endif %}
       NACOS_AUTH_ENABLE: "{{ nacos_auth_enabled | lower }}"
       NACOS_AUTH_ADMIN_ENABLE: "{{ nacos_web_login_enabled | lower }}"
       NACOS_AUTH_CONSOLE_ENABLE: "{{ nacos_web_login_enabled | lower }}"
@@ -100,6 +109,7 @@ services:
       MYSQL_SERVICE_DB_NAME: "{{ nacos_db.name }}"
       MYSQL_SERVICE_USER: "{{ nacos_db.user }}"
       MYSQL_SERVICE_PASSWORD: "{{ nacos_db.password }}"
+      MYSQL_SERVICE_DB_PARAM: "{{ nacos_db.params }}"
       MYSQL_DATABASE_NUM: "1"
     ports:
       - "{{ nacos_http_port }}:8848"
@@ -108,10 +118,6 @@ services:
       - "{{ nacos_grpc_tls_port }}:9849"
       - "{{ nacos_raft_port }}:7848"
     volumes:
-      - "./conf/application.properties:/home/nacos/conf/application.properties"
-{% if nacos_mode == 'cluster' %}
-      - "./conf/cluster.conf:/home/nacos/conf/cluster.conf"
-{% endif %}
       - "./logs:/home/nacos/logs"
       - "./data:/home/nacos/data"
     networks:

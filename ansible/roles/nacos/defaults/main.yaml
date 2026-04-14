@@ -9,7 +9,6 @@ nacos_version: "latest"
 nacos_base_dir: "/ROOT/data/nacos"
 nacos_data_dir: "{{ nacos_base_dir }}/data"
 nacos_logs_dir: "{{ nacos_base_dir }}/logs"
-nacos_conf_dir: "{{ nacos_base_dir }}/conf"
 nacos_container_name: "nacos"
 nacos_image: "nacos/nacos-server"
 
@@ -40,7 +39,7 @@ nacos_db:
   name: "nacos"
   user: "nacos"
   password: "nacos"
-  params: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false"
+  params: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true"
 
 # 认证配置（nacos_auth_token 必须为 Base64 编码，解码后 >= 32 字节）
 nacos_auth_enabled: true
