@@ -18,8 +18,8 @@ services:
       - "--collation-server=utf8mb4_unicode_ci"
       - "--default-time-zone=+8:00"
     volumes:
-      - "{{ nacos_mysql_data_dir }}:/var/lib/mysql"
-      - "{{ nacos_mysql_init_dir }}:/docker-entrypoint-initdb.d:ro"
+      - "./mysql:/var/lib/mysql"
+      - "./mysql-init:/docker-entrypoint-initdb.d:ro"
     networks:
       - nacos-net
     healthcheck:
@@ -64,10 +64,10 @@ services:
       - "{{ grpc_port }}:9848"
       - "{{ grpc_tls_port }}:9849"
     volumes:
-      - "{{ nacos_conf_dir }}/cluster.conf:/home/nacos/conf/cluster.conf"
-      - "{{ nacos_conf_dir }}/application.properties:/home/nacos/conf/application.properties"
-      - "{{ nacos_logs_dir }}/node{{ i + 1 }}:/home/nacos/logs"
-      - "{{ nacos_data_dir }}/node{{ i + 1 }}:/home/nacos/data"
+      - "./conf/cluster.conf:/home/nacos/conf/cluster.conf"
+      - "./conf/application.properties:/home/nacos/conf/application.properties"
+      - "./logs/node{{ i + 1 }}:/home/nacos/logs"
+      - "./data/node{{ i + 1 }}:/home/nacos/data"
     networks:
       - nacos-net
 {% endfor %}
@@ -102,12 +102,12 @@ services:
       - "{{ nacos_grpc_tls_port }}:9849"
       - "{{ nacos_raft_port }}:7848"
     volumes:
-      - "{{ nacos_conf_dir }}/application.properties:/home/nacos/conf/application.properties"
+      - "./conf/application.properties:/home/nacos/conf/application.properties"
 {% if nacos_mode == 'cluster' %}
-      - "{{ nacos_conf_dir }}/cluster.conf:/home/nacos/conf/cluster.conf"
+      - "./conf/cluster.conf:/home/nacos/conf/cluster.conf"
 {% endif %}
-      - "{{ nacos_logs_dir }}:/home/nacos/logs"
-      - "{{ nacos_data_dir }}:/home/nacos/data"
+      - "./logs:/home/nacos/logs"
+      - "./data:/home/nacos/data"
     networks:
       - nacos-net
 {% endif %}

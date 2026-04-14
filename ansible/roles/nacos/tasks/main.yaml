@@ -4,8 +4,8 @@
     that:
       - nacos_mode in ['standalone', 'cluster']
       - nacos_db_mode in ['compose', 'external']
-      - nacos_auth_token | length >= 32
-    fail_msg: "Nacos 参数非法，请检查 mode/db_mode/auth_token"
+      - nacos_auth_token | b64decode | length >= 32
+    fail_msg: "Nacos 参数非法，请检查 mode/db_mode；auth_token 须为 Base64 编码且解码后 >= 32 字节"
 
 - name: 校验集群类型参数
   assert:
@@ -133,11 +133,11 @@
 - name: 下发 Docker Compose 文件
   template:
     src: docker-compose.yml.j2
-    dest: "{{ nacos_conf_dir }}/docker-compose.yml"
+    dest: "{{ nacos_base_dir }}/docker-compose.yml"
     mode: "0644"
 
 - name: Docker Compose 部署 Nacos
   command: docker compose up -d
   args:
-    chdir: "{{ nacos_conf_dir }}"
+    chdir: "{{ nacos_base_dir }}"
     warn: false

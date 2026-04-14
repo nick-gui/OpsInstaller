@@ -30,8 +30,8 @@
       default: "true"
       private: no
     - name: "nacos_auth_token"
-      prompt: "请输入认证 Token（至少 32 位）"
-      default: "please-change-this-token-at-least-32-characters"
+      prompt: "请输入认证 Token（Base64 编码，解码后 >= 32 字节）"
+      default: "nNS7Uu+FjxLsb4OQ/Q1auNMnZiD5HnLXdhfPbVQWz7cHp1IfThC3Bk5dGv73gfU3"
       private: no
 
   pre_tasks:

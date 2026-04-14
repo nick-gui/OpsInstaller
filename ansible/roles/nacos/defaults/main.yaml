@@ -5,10 +5,11 @@ nacos_mode: "standalone"
 # 版本: 默认 latest
 nacos_version: "latest"
 
-# Docker Compose 目录
-nacos_data_dir: "/ROOT/data/nacos/data"
-nacos_logs_dir: "/ROOT/log/nacos"
-nacos_conf_dir: "/ROOT/conf/nacos"
+# 基础目录（所有资源统一存放）
+nacos_base_dir: "/ROOT/data/nacos"
+nacos_data_dir: "{{ nacos_base_dir }}/data"
+nacos_logs_dir: "{{ nacos_base_dir }}/logs"
+nacos_conf_dir: "{{ nacos_base_dir }}/conf"
 nacos_container_name: "nacos"
 nacos_image: "nacos/nacos-server"
 
@@ -40,9 +41,9 @@ nacos_db:
   password: "nacos"
   params: "characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false"
 
-# 认证配置
+# 认证配置（nacos_auth_token 必须为 Base64 编码，解码后 >= 32 字节）
 nacos_auth_enabled: true
-nacos_auth_token: "please-change-this-token-at-least-32-characters"
+nacos_auth_token: "nNS7Uu+FjxLsb4OQ/Q1auNMnZiD5HnLXdhfPbVQWz7cHp1IfThC3Bk5dGv73gfU3"
 nacos_auth_identity_key: "serverIdentity"
 nacos_auth_identity_value: "security"
 nacos_web_login_enabled: true
@@ -54,8 +55,8 @@ nacos_docker_restart_policy: "always"
 nacos_mysql_image: "mysql:8.0"
 nacos_mysql_container_name: "nacos-mysql"
 nacos_mysql_root_password: "root123456"
-nacos_mysql_data_dir: "/ROOT/data/nacos/mysql"
-nacos_mysql_init_dir: "/ROOT/conf/nacos/mysql-init"
+nacos_mysql_data_dir: "{{ nacos_base_dir }}/mysql"
+nacos_mysql_init_dir: "{{ nacos_base_dir }}/mysql-init"
 
 # Nacos SQL 初始化文件下载（从 GitHub 获取对应版本）
 # latest 使用 master 分支，指定版本使用对应 tag
