@@ -14,22 +14,6 @@ proxy_env: >-
 system_timezone: "Asia/Shanghai"
 system_locale: "en_US.UTF-8"
 
-# 用户配置
-system_users:
-  - name: "www"
-    group: "www"
-    uid: 701
-    shell: "/bin/bash"
-    sudo: true
-  - name: "rouser"
-    group: "rouser"
-    uid: 1000
-    shell: "/bin/bash"
-    sudo: false
-
-# 目录结构
-
-
 # 磁盘挂载配置
 # 示例配置，根据实际设备路径修改
 disk_mounts: []

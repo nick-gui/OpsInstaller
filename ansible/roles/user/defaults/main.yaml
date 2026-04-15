@@ -6,3 +6,8 @@ system_users:
     uid: 701
     shell: "/bin/bash"
     sudo: true
+  - name: "rouser"
+    group: "rouser"
+    uid: 1000
+    shell: "/bin/bash"
+    sudo: false
